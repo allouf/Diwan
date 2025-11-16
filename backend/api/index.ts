@@ -1,75 +1,58 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
 
-// Import your existing Express app setup
-import authRoutes from '../src/routes/auth';
-import userRoutes from '../src/routes/users';
-import documentRoutes from '../src/routes/documents';
-import categoryRoutes from '../src/routes/categories';
-import departmentRoutes from '../src/routes/departments';
-import fileRoutes from '../src/routes/files';
-import dashboardRoutes from '../src/routes/dashboard';
-import notificationRoutes from '../src/routes/notifications';
-import activityRoutes from '../src/routes/activities';
-import searchRoutes from '../src/routes/search';
-import configRoutes from '../src/routes/config';
+export default async (req: VercelRequest, res: VercelResponse) => {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
 
-// Load environment variables
-dotenv.config();
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
 
-const app = express();
+  try {
+    const { pathname } = new URL(req.url!, 'http://localhost');
 
-// Middleware
-app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
-  credentials: true
-}));
-
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// API Routes - Note: /api prefix is handled by Vercel routing
-app.use('/auth', authRoutes);
-app.use('/users', userRoutes);
-app.use('/documents', documentRoutes);
-app.use('/categories', categoryRoutes);
-app.use('/departments', departmentRoutes);
-app.use('/files', fileRoutes);
-app.use('/dashboard', dashboardRoutes);
-app.use('/notifications', notificationRoutes);
-app.use('/activities', activityRoutes);
-app.use('/search', searchRoutes);
-app.use('/config', configRoutes);
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
-
-// Root endpoint
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'HIAST CMS API is running',
-    version: '1.0.0',
-    endpoints: {
-      health: '/api/health',
-      auth: '/api/auth',
-      users: '/api/users',
-      documents: '/api/documents',
-      dashboard: '/api/dashboard',
-      setup: '/api/setup-db',
-      docs: 'https://github.com/allouf/Diwan'
+    // Health endpoint
+    if (pathname === '/health' || pathname === '/api/health') {
+      return res.status(200).json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'production',
+        message: 'HIAST CMS API is running'
+      });
     }
-  });
-});
 
-// Export as serverless function for Vercel
-export default (req: VercelRequest, res: VercelResponse) => {
-  return app(req, res);
+    // Root endpoint
+    if (pathname === '/' || pathname === '/api') {
+      return res.status(200).json({
+        message: 'HIAST CMS API is running',
+        version: '1.0.0',
+        endpoints: {
+          health: '/api/health',
+          setup: '/api/setup-db',
+          auth: '/api/auth (not implemented yet)',
+          docs: 'https://github.com/allouf/Diwan'
+        },
+        status: 'Basic API working - Full routes coming soon'
+      });
+    }
+
+    // Default response for other paths
+    return res.status(404).json({
+      error: 'Endpoint not found',
+      path: pathname,
+      message: 'API is in basic mode - Full routes coming soon'
+    });
+
+  } catch (error: any) {
+    console.error('API Error:', error);
+    return res.status(500).json({
+      error: 'Internal server error',
+      message: error.message
+    });
+  }
 };
