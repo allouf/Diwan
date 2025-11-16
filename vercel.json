@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "backend/package.json",
+      "use": "@vercel/node",
+      "config": {
+        "outputDirectory": "backend/dist"
+      }
+    },
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "outputDirectory": "frontend/dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/backend/dist/index.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/dist/$1"
+    }
+  ],
+  "installCommand": "cd backend && npm install && cd ../frontend && npm install",
+  "buildCommand": "cd backend && npm run build && cd ../frontend && npm run build",
+  "functions": {
+    "backend/dist/index.js": {
+      "maxDuration": 30
+    }
+  }
+}

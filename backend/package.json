@@ -14,7 +14,9 @@
     "db:generate": "prisma generate",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "db:reset": "prisma migrate reset"
+    "db:reset": "prisma migrate reset",
+    "deploy:db": "node scripts/deploy-db.js",
+    "vercel-build": "npm run build && npm run deploy:db"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
