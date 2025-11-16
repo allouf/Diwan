@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Database deployment script for Vercel
-// This script runs during Vercel deployment to apply database migrations
+// This script runs during Vercel deployment to sync database schema
 
 const { execSync } = require('child_process');
 
@@ -13,9 +13,9 @@ async function deployDatabase() {
     console.log('📦 Generating Prisma client...');
     execSync('npx prisma generate', { stdio: 'inherit' });
 
-    // Deploy migrations to production database
-    console.log('🗄️ Deploying database migrations...');
-    execSync('npx prisma migrate deploy', { stdio: 'inherit' });
+    // Push schema to database (for now, until migrations are set up)
+    console.log('🗄️ Syncing database schema...');
+    execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit' });
 
     console.log('✅ Database deployment completed successfully!');
     console.log('');
@@ -29,7 +29,7 @@ async function deployDatabase() {
     console.error('Troubleshooting:');
     console.error('1. Ensure DATABASE_URL environment variable is set in Vercel');
     console.error('2. Check that your database is accessible from Vercel');
-    console.error('3. Verify that migration files are committed to git');
+    console.error('3. Verify that Prisma schema is correct');
     console.error('');
     process.exit(1);
   }
