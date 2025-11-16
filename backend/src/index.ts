@@ -113,10 +113,15 @@ ensureDirectoriesExist().then(() => {
   console.error('❌ Failed to initialize file storage:', error);
 });
 
-// Start server
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📱 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`📂 File uploads: /api/files/upload`);
-});
+// Start server (only in non-serverless environment)
+if (process.env.VERCEL !== '1') {
+  server.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📱 Environment: ${process.env.NODE_ENV}`);
+    console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`📂 File uploads: /api/files/upload`);
+  });
+}
+
+// Export app for serverless deployment
+export default app;
