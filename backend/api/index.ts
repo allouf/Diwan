@@ -30,21 +30,21 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/documents', documentRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/departments', departmentRoutes);
-app.use('/api/files', fileRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/activities', activityRoutes);
-app.use('/api/search', searchRoutes);
-app.use('/api/config', configRoutes);
+// API Routes - Note: /api prefix is handled by Vercel routing
+app.use('/auth', authRoutes);
+app.use('/users', userRoutes);
+app.use('/documents', documentRoutes);
+app.use('/categories', categoryRoutes);
+app.use('/departments', departmentRoutes);
+app.use('/files', fileRoutes);
+app.use('/dashboard', dashboardRoutes);
+app.use('/notifications', notificationRoutes);
+app.use('/activities', activityRoutes);
+app.use('/search', searchRoutes);
+app.use('/config', configRoutes);
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
@@ -60,6 +60,10 @@ app.get('/', (req, res) => {
     endpoints: {
       health: '/api/health',
       auth: '/api/auth',
+      users: '/api/users',
+      documents: '/api/documents',
+      dashboard: '/api/dashboard',
+      setup: '/api/setup-db',
       docs: 'https://github.com/allouf/Diwan'
     }
   });
