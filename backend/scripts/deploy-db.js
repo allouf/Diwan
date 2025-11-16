@@ -1,44 +1,37 @@
 #!/usr/bin/env node
 
 // Database deployment script for Vercel
-// This script will run during Vercel deployment to set up the database
+// This script runs during Vercel deployment to apply database migrations
 
 const { execSync } = require('child_process');
 
 async function deployDatabase() {
   try {
-    console.log('🔧 Starting database setup...');
-    
+    console.log('🔧 Starting database deployment...');
+
     // Generate Prisma client
     console.log('📦 Generating Prisma client...');
     execSync('npx prisma generate', { stdio: 'inherit' });
-    
-    // Push database schema
-    console.log('🗄️ Pushing database schema...');
-    execSync('npx prisma db push --force-reset', { stdio: 'inherit' });
-    
-    // Seed the database
-    console.log('🌱 Seeding database...');
-    execSync('npx prisma db seed', { stdio: 'inherit' });
-    
-    console.log('✅ Database setup completed successfully!');
-    
+
+    // Deploy migrations to production database
+    console.log('🗄️ Deploying database migrations...');
+    execSync('npx prisma migrate deploy', { stdio: 'inherit' });
+
+    console.log('✅ Database deployment completed successfully!');
+    console.log('');
+    console.log('⚠️  Note: Database seeding must be done manually.');
+    console.log('   Run: DATABASE_URL="your-db-url" npm run db:seed');
+    console.log('');
+
   } catch (error) {
-    console.error('❌ Database setup failed:', error.message);
-    
-    // If db push fails, try without force-reset (database might already exist)
-    try {
-      console.log('🔄 Retrying without force-reset...');
-      execSync('npx prisma db push', { stdio: 'inherit' });
-      
-      console.log('🌱 Seeding database...');
-      execSync('npx prisma db seed', { stdio: 'inherit' });
-      
-      console.log('✅ Database setup completed on retry!');
-    } catch (retryError) {
-      console.error('❌ Database setup failed on retry:', retryError.message);
-      process.exit(1);
-    }
+    console.error('❌ Database deployment failed:', error.message);
+    console.error('');
+    console.error('Troubleshooting:');
+    console.error('1. Ensure DATABASE_URL environment variable is set in Vercel');
+    console.error('2. Check that your database is accessible from Vercel');
+    console.error('3. Verify that migration files are committed to git');
+    console.error('');
+    process.exit(1);
   }
 }
 

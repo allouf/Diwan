@@ -11,12 +11,15 @@
     "build:prod": "npm run clean && npm run build",
     "test": "echo \"Error: no test specified\" && exit 1",
     "db:migrate": "prisma migrate dev",
+    "db:migrate:create": "prisma migrate dev --create-only",
+    "db:migrate:deploy": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
+    "postinstall": "prisma generate",
     "deploy:db": "node scripts/deploy-db.js",
-    "vercel-build": "npm run build && npm run deploy:db"
+    "vercel-build": "prisma generate && prisma migrate deploy && npm run build"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
