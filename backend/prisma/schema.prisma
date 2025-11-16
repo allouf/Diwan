@@ -1,0 +1,319 @@
+// Correspondence Management System (CMS) Database Schema
+// HIAST - Higher Institute for Applied Science and Technology
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================
+// ENUMS
+// =====================
+
+enum UserRole {
+  ADMIN
+  CORRESPONDENCE_OFFICER
+  DEPARTMENT_HEAD
+  DEPARTMENT_USER
+}
+
+enum DocumentStatus {
+  REGISTERED
+  PENDING
+  SEEN
+  COMPLETED
+  ARCHIVED
+}
+
+enum Priority {
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum SenderType {
+  INTERNAL
+  EXTERNAL
+}
+
+enum OutcomeType {
+  APPROVED
+  REJECTED
+  PENDING_REVIEW
+  REQUIRES_ACTION
+  COMPLETED
+  ON_HOLD
+}
+
+// =====================
+// CORE MODELS
+// =====================
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole
+  avatar    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  departmentId String?
+  department   Department?       @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  
+  // Documents created by this user
+  documentsCreated Document[] @relation("DocumentCreator")
+  
+  // Outcomes logged by this user
+  outcomesLogged Outcome[]
+  
+  // Activity logs
+  activityLogs ActivityLog[]
+  
+  // Seen status tracking
+  documentSeenEntries DocumentSeenEntry[]
+  
+  // Notifications
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model Department {
+  id           String  @id @default(cuid())
+  name         String  @unique
+  nameAr       String
+  contactPerson String?
+  email        String?
+  phone        String?
+  description  String?
+  isActive     Boolean @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  users        User[]
+  categories   CategoryDepartment[]
+  documents    DocumentDepartment[]
+  outcomes     Outcome[]
+  notifications Notification[]
+  seenEntries  DocumentSeenEntry[]
+
+  @@map("departments")
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  nameAr    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  documents            Document[]
+  suggestedDepartments CategoryDepartment[]
+
+  @@map("categories")
+}
+
+// Junction table for Category-Department relationships
+model CategoryDepartment {
+  categoryId   String
+  departmentId String
+  category     Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@id([categoryId, departmentId])
+  @@map("category_departments")
+}
+
+model Document {
+  id               String       @id @default(cuid())
+  referenceNumber  String       @unique
+  dateReceived     DateTime
+  subject          String
+  summary          String       @db.Text
+  senderType       SenderType
+  senderName       String
+  status           DocumentStatus @default(REGISTERED)
+  priority         Priority     @default(NORMAL)
+  physicalLocation String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Relations
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  
+  createdById String
+  createdBy   User   @relation("DocumentCreator", fields: [createdById], references: [id])
+  
+  // Many-to-many with departments
+  assignedDepartments DocumentDepartment[]
+  
+  // Related records
+  outcomes      Outcome[]
+  attachments   Attachment[]
+  activityLogs  ActivityLog[]
+  seenEntries   DocumentSeenEntry[]
+  notifications Notification[]
+
+  // Indexes for performance
+  @@index([referenceNumber])
+  @@index([dateReceived])
+  @@index([status])
+  @@index([priority])
+  @@index([categoryId])
+  @@index([createdAt])
+  @@map("documents")
+}
+
+// Junction table for Document-Department relationships
+model DocumentDepartment {
+  documentId   String
+  departmentId String
+  assignedAt   DateTime @default(now())
+  
+  document   Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@id([documentId, departmentId])
+  @@map("document_departments")
+}
+
+// Track which users in each department have seen the document
+model DocumentSeenEntry {
+  id         String   @id @default(cuid())
+  documentId String
+  userId     String
+  departmentId String
+  seenAt     DateTime @default(now())
+  
+  document   Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, userId])
+  @@index([documentId])
+  @@index([departmentId])
+  @@map("document_seen_entries")
+}
+
+model Outcome {
+  id               String      @id @default(cuid())
+  type             OutcomeType
+  summary          String      @db.Text
+  date             DateTime
+  requiresFollowUp Boolean     @default(false)
+  followUpDate     DateTime?
+  loggedAt         DateTime    @default(now())
+
+  // Relations
+  documentId   String
+  document     Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  
+  loggedById String
+  loggedBy   User   @relation(fields: [loggedById], references: [id])
+  
+  attachments Attachment[]
+
+  @@index([documentId])
+  @@index([departmentId])
+  @@index([date])
+  @@map("outcomes")
+}
+
+model Attachment {
+  id           String   @id @default(cuid())
+  name         String
+  originalName String
+  size         Int
+  type         String
+  url          String
+  path         String
+  uploadedAt   DateTime @default(now())
+
+  // Relations (either attached to document or outcome)
+  documentId String?
+  document   Document? @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  
+  outcomeId String?
+  outcome   Outcome? @relation(fields: [outcomeId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([outcomeId])
+  @@map("attachments")
+}
+
+model ActivityLog {
+  id                 String   @id @default(cuid())
+  action             String
+  actionAr           String
+  details            String?
+  timestamp          DateTime @default(now())
+  documentReference  String?
+
+  // Relations
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+  
+  documentId String?
+  document   Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([documentId])
+  @@index([timestamp])
+  @@map("activity_logs")
+}
+
+model Notification {
+  id                String   @id @default(cuid())
+  message           String
+  messageAr         String
+  isRead            Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  readAt            DateTime?
+
+  // Relations
+  documentId        String
+  document          Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  
+  recipientUserId   String
+  recipientUser     User       @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
+  
+  departmentId      String
+  department        Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@index([recipientUserId])
+  @@index([departmentId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// =====================
+// SYSTEM CONFIGURATION
+// =====================
+
+model SystemConfig {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_config")
+}
