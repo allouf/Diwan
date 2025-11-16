@@ -108,3 +108,23 @@ export const getDocumentStats = async () => {
     completedThisMonth,
   };
 };
+
+/**
+ * Log user activity in the system
+ */
+export const logActivity = async (
+  userId: string,
+  action: string,
+  details?: string,
+  documentId?: string
+): Promise<void> => {
+  await prisma.activityLog.create({
+    data: {
+      userId,
+      action,
+      actionAr: action, // TODO: Add Arabic translation mapping
+      details: details || undefined,
+      documentId: documentId || undefined,
+    },
+  });
+};

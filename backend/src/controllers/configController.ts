@@ -36,16 +36,15 @@ export const getSystemConfigurations = async (req: Request, res: Response) => {
         key: true,
         value: true,
         description: true,
-        createdAt: true,
         updatedAt: true
       },
       orderBy: { key: 'asc' }
     });
 
-    res.json({ configurations });
+    return res.json({ configurations });
   } catch (error) {
     console.error('Error fetching system configurations:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -67,7 +66,6 @@ export const getConfigurationByKey = async (req: Request, res: Response) => {
         key: true,
         value: true,
         description: true,
-        createdAt: true,
         updatedAt: true
       }
     });
@@ -76,10 +74,10 @@ export const getConfigurationByKey = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Configuration not found' });
     }
 
-    res.json(configuration);
+    return res.json(configuration);
   } catch (error) {
     console.error('Error fetching configuration:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -118,7 +116,6 @@ export const updateSystemConfiguration = async (req: Request, res: Response) => 
           key: true,
           value: true,
           description: true,
-          createdAt: true,
           updatedAt: true
         }
       });
@@ -136,7 +133,6 @@ export const updateSystemConfiguration = async (req: Request, res: Response) => 
           key: true,
           value: true,
           description: true,
-          createdAt: true,
           updatedAt: true
         }
       });
@@ -150,16 +146,16 @@ export const updateSystemConfiguration = async (req: Request, res: Response) => 
       `${action === 'UPDATE_CONFIG' ? 'Updated' : 'Created'} system configuration: ${key} = ${value}`
     );
 
-    res.json(configuration);
+    return res.json(configuration);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ 
-        message: 'Validation error', 
-        errors: error.errors 
+      return res.status(400).json({
+        message: 'Validation error',
+        errors: error.issues
       });
     }
     console.error('Error updating system configuration:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -225,19 +221,19 @@ export const bulkUpdateSystemConfigurations = async (req: Request, res: Response
       );
     }
 
-    res.json({
+    return res.json({
       message: `Successfully processed ${results.length} configurations`,
       configurations: results
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ 
-        message: 'Validation error', 
-        errors: error.errors 
+      return res.status(400).json({
+        message: 'Validation error',
+        errors: error.issues
       });
     }
     console.error('Error bulk updating system configurations:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -273,10 +269,10 @@ export const deleteSystemConfiguration = async (req: Request, res: Response) => 
       `Deleted system configuration: ${key}`
     );
 
-    res.json({ message: 'Configuration deleted successfully' });
+    return res.json({ message: 'Configuration deleted successfully' });
   } catch (error) {
     console.error('Error deleting system configuration:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -319,10 +315,10 @@ export const getPublicConfigurations = async (req: Request, res: Response) => {
       return acc;
     }, {} as Record<string, { value: string; description: string | null }>);
 
-    res.json(configMap);
+    return res.json(configMap);
   } catch (error) {
     console.error('Error fetching public configurations:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -369,13 +365,13 @@ export const resetToDefaults = async (req: Request, res: Response) => {
       'Reset all system configurations to defaults'
     );
 
-    res.json({
+    return res.json({
       message: 'System configurations reset to defaults successfully',
       configurationsCount: defaultConfigs.length
     });
   } catch (error) {
     console.error('Error resetting configurations:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -394,7 +390,6 @@ export const exportConfigurations = async (req: Request, res: Response) => {
         key: true,
         value: true,
         description: true,
-        createdAt: true,
         updatedAt: true
       },
       orderBy: { key: 'asc' }
@@ -414,10 +409,10 @@ export const exportConfigurations = async (req: Request, res: Response) => {
       `Exported ${configurations.length} system configurations`
     );
 
-    res.json(exportData);
+    return res.json(exportData);
   } catch (error) {
     console.error('Error exporting configurations:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -486,7 +481,7 @@ export const importConfigurations = async (req: Request, res: Response) => {
       `Imported configurations: ${imported} new, ${updated} updated, ${skipped} skipped`
     );
 
-    res.json({
+    return res.json({
       message: 'Configuration import completed',
       summary: {
         imported,
@@ -497,6 +492,6 @@ export const importConfigurations = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error importing configurations:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };

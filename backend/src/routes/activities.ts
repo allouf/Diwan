@@ -14,9 +14,9 @@ const router = Router();
 router.use(authenticate);
 
 // Activity log routes
-router.get('/', requireRole(['ADMIN', 'CORRESPONDENCE_OFFICER']), getActivityLogs);
+router.get('/', requireRole('ADMIN', 'CORRESPONDENCE_OFFICER'), getActivityLogs);
 router.get('/my-activities', getUserActivityLogs);
-router.get('/statistics', requireRole(['ADMIN', 'CORRESPONDENCE_OFFICER']), getActivityStatistics);
+router.get('/statistics', requireRole('ADMIN', 'CORRESPONDENCE_OFFICER'), getActivityStatistics);
 router.get('/summary', getActivitySummary);
 router.get('/document/:documentId', getDocumentActivities);
 

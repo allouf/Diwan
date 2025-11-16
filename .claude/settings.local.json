@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(cat:*)",
+      "Bash(cut:*)",
+      "Bash(python fix_errors.py:*)",
+      "Bash(git checkout:*)",
+      "Bash(python fix_notifications.py:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

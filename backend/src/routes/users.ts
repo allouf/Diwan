@@ -16,12 +16,12 @@ const router = Router();
 router.use(authenticate);
 
 // User management routes (admin only)
-router.get('/', requireRole(['ADMIN']), getUsers);
-router.get('/stats', requireRole(['ADMIN']), getUserStats);
-router.get('/:id', requireRole(['ADMIN']), getUserById);
-router.post('/', requireRole(['ADMIN']), createUser);
-router.put('/:id', requireRole(['ADMIN']), updateUser);
-router.delete('/:id', requireRole(['ADMIN']), deleteUser);
-router.post('/:id/change-password', requireRole(['ADMIN']), changeUserPassword);
+router.get('/', requireRole('ADMIN'), getUsers);
+router.get('/stats', requireRole('ADMIN'), getUserStats);
+router.get('/:id', requireRole('ADMIN'), getUserById);
+router.post('/', requireRole('ADMIN'), createUser);
+router.put('/:id', requireRole('ADMIN'), updateUser);
+router.delete('/:id', requireRole('ADMIN'), deleteUser);
+router.post('/:id/change-password', requireRole('ADMIN'), changeUserPassword);
 
 export default router;

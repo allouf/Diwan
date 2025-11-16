@@ -119,6 +119,7 @@ export const createDepartment = async (
   try {
     const {
       name,
+      code,
       nameAr,
       contactPerson,
       email,
@@ -138,6 +139,7 @@ export const createDepartment = async (
     const department = await prisma.department.create({
       data: {
         name,
+        code,
         nameAr,
         contactPerson,
         email,

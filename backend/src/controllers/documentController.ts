@@ -77,7 +77,7 @@ export const createDocument = async (
           senderName,
           priority,
           physicalLocation,
-          status: DocumentStatus.REGISTERED,
+          status: DocumentStatus.DRAFT,
           categoryId,
           createdById: req.user!.id,
         },

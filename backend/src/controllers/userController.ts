@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient, Role, UserStatus } from '../generated/prisma';
+import { PrismaClient, UserRole } from '../generated/prisma';
 import { logActivity } from '../lib/db-utils';
 import { hashPassword } from '../lib/password';
 import { z } from 'zod';
@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 const createUserSchema = z.object({
   email: z.string().email(),
   fullName: z.string().min(2),
-  role: z.nativeEnum(Role),
+  role: z.nativeEnum(UserRole),
   departmentId: z.string().optional(),
   password: z.string().min(6)
 });
@@ -18,9 +18,9 @@ const createUserSchema = z.object({
 const updateUserSchema = z.object({
   email: z.string().email().optional(),
   fullName: z.string().min(2).optional(),
-  role: z.nativeEnum(Role).optional(),
+  role: z.nativeEnum(UserRole).optional(),
   departmentId: z.string().optional().nullable(),
-  status: z.nativeEnum(UserStatus).optional()
+  isActive: z.boolean().optional()
 });
 
 const changePasswordSchema = z.object({
@@ -48,7 +48,7 @@ export const getUsers = async (req: Request, res: Response) => {
     const where: any = {};
     
     if (role) where.role = role;
-    if (status) where.status = status;
+    if (status) where.isActive = status === 'ACTIVE';
     if (departmentId) where.departmentId = departmentId;
     
     if (search) {
@@ -67,7 +67,7 @@ export const getUsers = async (req: Request, res: Response) => {
           email: true,
           fullName: true,
           role: true,
-          status: true,
+          
           departmentId: true,
           createdAt: true,
           updatedAt: true,
@@ -80,7 +80,7 @@ export const getUsers = async (req: Request, res: Response) => {
           },
           _count: {
             select: {
-              createdDocuments: true,
+              documentsCreated: true,
               assignedDocuments: true
             }
           }
@@ -122,7 +122,7 @@ export const getUsers = async (req: Request, res: Response) => {
         return {
           ...user,
           stats: {
-            totalCreated: user._count.createdDocuments,
+            totalCreated: user._count.documentsCreated,
             totalAssigned: user._count.assignedDocuments,
             recentDocuments,
             pendingTasks
@@ -131,7 +131,7 @@ export const getUsers = async (req: Request, res: Response) => {
       })
     );
 
-    res.json({
+    return res.json({
       users: usersWithStats,
       pagination: {
         page: Number(page),
@@ -142,13 +142,13 @@ export const getUsers = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error fetching users:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 // Get user by ID
 export const getUserById = async (req: Request, res: Response) => {
-  try {
+  try{
     const { id } = req.params;
 
     const user = await prisma.user.findUnique({
@@ -158,7 +158,7 @@ export const getUserById = async (req: Request, res: Response) => {
         email: true,
         fullName: true,
         role: true,
-        status: true,
+        isActive: true,
         departmentId: true,
         createdAt: true,
         updatedAt: true,
@@ -171,7 +171,7 @@ export const getUserById = async (req: Request, res: Response) => {
         },
         _count: {
           select: {
-            createdDocuments: true,
+            documentsCreated: true,
             assignedDocuments: true,
             activityLogs: true
           }
@@ -187,13 +187,13 @@ export const getUserById = async (req: Request, res: Response) => {
     const [recentActivity, documentStats, loginHistory] = await Promise.all([
       prisma.activityLog.findMany({
         where: { userId: user.id },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { timestamp: 'desc' },
         take: 10,
         select: {
           id: true,
           action: true,
           details: true,
-          createdAt: true
+          timestamp: true
         }
       }),
       prisma.document.groupBy({
@@ -213,19 +213,19 @@ export const getUserById = async (req: Request, res: Response) => {
           userId: user.id,
           action: 'LOGIN'
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { timestamp: 'desc' },
         take: 5,
         select: {
-          createdAt: true,
+          timestamp: true,
           details: true
         }
       })
     ]);
 
-    res.json({
+    return res.json({
       ...user,
       stats: {
-        totalCreated: user._count.createdDocuments,
+        totalCreated: user._count.documentsCreated,
         totalAssigned: user._count.assignedDocuments,
         totalActivities: user._count.activityLogs,
         documentsByStatus: documentStats.reduce((acc, stat) => {
@@ -238,7 +238,7 @@ export const getUserById = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error fetching user:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -273,19 +273,20 @@ export const createUser = async (req: Request, res: Response) => {
     // Create user
     const newUser = await prisma.user.create({
       data: {
+        name: validatedData.fullName.split(' ')[0], // Extract first name
         email: validatedData.email,
         fullName: validatedData.fullName,
         role: validatedData.role,
         departmentId: validatedData.departmentId || null,
         password: hashedPassword,
-        status: 'ACTIVE'
+        isActive: true
       },
       select: {
         id: true,
         email: true,
         fullName: true,
         role: true,
-        status: true,
+        isActive: true,
         departmentId: true,
         createdAt: true,
         department: {
@@ -306,25 +307,27 @@ export const createUser = async (req: Request, res: Response) => {
     );
 
     // Create welcome notification for the new user
-    await prisma.notification.create({
-      data: {
-        userId: newUser.id,
-        title: 'Welcome to HIAST CMS',
-        message: `Welcome ${newUser.fullName}! Your account has been created successfully. Your role is ${newUser.role}.`,
-        type: 'SYSTEM'
-      }
-    });
+    // TODO: Fix notification schema - currently requires documentId which doesn't apply to system notifications
+    // await prisma.notification.create({
+    //   data: {
+    //     recipientUserId: newUser.id,
+    //     message: `Welcome ${newUser.fullName}! Your account has been created successfully. Your role is ${newUser.role}.`,
+    //     messageAr: `مرحباً ${newUser.fullName}! تم إنشاء حسابك بنجاح. دورك هو ${newUser.role}.`,
+    //     documentId: '', // Required but not applicable for system notifications
+    //     departmentId: newUser.departmentId || ''
+    //   }
+    // });
 
-    res.status(201).json(newUser);
+    return res.status(201).json(newUser);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ 
         message: 'Validation error', 
-        errors: error.errors 
+        errors: error.issues 
       });
     }
     console.error('Error creating user:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -381,7 +384,7 @@ export const updateUser = async (req: Request, res: Response) => {
         email: true,
         fullName: true,
         role: true,
-        status: true,
+        isActive: true,
         departmentId: true,
         createdAt: true,
         updatedAt: true,
@@ -403,29 +406,31 @@ export const updateUser = async (req: Request, res: Response) => {
     );
 
     // Notify user of profile update
-    if (validatedData.status || validatedData.role) {
-      await prisma.notification.create({
-        data: {
-          userId: updatedUser.id,
-          title: 'Account Updated',
-          message: `Your account has been updated by an administrator.${
-            validatedData.status ? ` Status: ${validatedData.status}` : ''
-          }${validatedData.role ? ` Role: ${validatedData.role}` : ''}`,
-          type: 'SYSTEM'
-        }
-      });
-    }
+    // TODO: Fix notification schema - currently requires documentId which doesn't apply to system notifications
+    // if (validatedData.isActive || validatedData.role) {
+    //   await prisma.notification.create({
+    //     data: {
+    //       recipientUserId: updatedUser.id,
+    //       message: `Your account has been updated by an administrator.${
+    //         validatedData.isActive ? ` Status: ${validatedData.isActive}` : ''
+    //       }${validatedData.role ? ` Role: ${validatedData.role}` : ''}`,
+    //       messageAr: 'تم تحديث حسابك من قبل المسؤول',
+    //       documentId: '',
+    //       departmentId: updatedUser.departmentId || ''
+    //     }
+    //   });
+    // }
 
-    res.json(updatedUser);
+    return res.json(updatedUser);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ 
         message: 'Validation error', 
-        errors: error.errors 
+        errors: error.issues 
       });
     }
     console.error('Error updating user:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -447,7 +452,7 @@ export const deleteUser = async (req: Request, res: Response) => {
         id: true,
         email: true,
         fullName: true,
-        status: true
+        isActive: true
       }
     });
 
@@ -455,7 +460,7 @@ export const deleteUser = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (existingUser.status === 'INACTIVE') {
+    if (!existingUser.isActive) {
       return res.status(400).json({ message: 'User is already inactive' });
     }
 
@@ -463,7 +468,7 @@ export const deleteUser = async (req: Request, res: Response) => {
     await prisma.user.update({
       where: { id },
       data: {
-        status: 'INACTIVE',
+        isActive: false,
         updatedAt: new Date()
       }
     });
@@ -475,10 +480,10 @@ export const deleteUser = async (req: Request, res: Response) => {
       `Deactivated user: ${existingUser.fullName} (${existingUser.email})`
     );
 
-    res.json({ message: 'User deactivated successfully' });
+    return res.json({ message: 'User deactivated successfully' });
   } catch (error) {
     console.error('Error deleting user:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -523,25 +528,27 @@ export const changeUserPassword = async (req: Request, res: Response) => {
     );
 
     // Notify user
-    await prisma.notification.create({
-      data: {
-        userId: existingUser.id,
-        title: 'Password Changed',
-        message: 'Your password has been changed by an administrator. Please use your new password to log in.',
-        type: 'SYSTEM'
-      }
-    });
+    // TODO: Fix notification schema - currently requires documentId which doesn't apply to system notifications
+    // await prisma.notification.create({
+    //   data: {
+    //     recipientUserId: existingUser.id,
+    //     message: 'Your password has been changed by an administrator. Please use your new password to log in.',
+    //     messageAr: 'تم تغيير كلمة المرور الخاصة بك من قبل المسؤول',
+    //     documentId: '',
+    //     departmentId: existingUser.departmentId || ''
+    //   }
+    // });
 
-    res.json({ message: 'Password changed successfully' });
+    return res.json({ message: 'Password changed successfully' });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ 
         message: 'Validation error', 
-        errors: error.errors 
+        errors: error.issues 
       });
     }
     console.error('Error changing user password:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -556,7 +563,7 @@ export const getUserStats = async (req: Request, res: Response) => {
       recentRegistrations
     ] = await Promise.all([
       prisma.user.count(),
-      prisma.user.count({ where: { status: 'ACTIVE' } }),
+      prisma.user.count({ where: { isActive: true } }),
       prisma.user.groupBy({
         by: ['role'],
         _count: { id: true }

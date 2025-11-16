@@ -39,6 +39,6 @@ router.get('/info/:fileId', getFileInfo);
 router.delete('/:fileId', deleteFileById);
 
 // Administrative routes
-router.get('/admin/storage-stats', requireRole(['ADMIN']), getStorageStats);
+router.get('/admin/storage-stats', requireRole('ADMIN'), getStorageStats);
 
 export default router;

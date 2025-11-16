@@ -63,19 +63,21 @@ const createFileFilter = (allowedCategories: string[]) => {
 
 // Size validation middleware
 const validateFileSize = (sizeType: 'AVATAR' | 'DOCUMENT') => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     if (req.file && !isValidFileSize(req.file.size, sizeType)) {
-      return res.status(400).json({
+      res.status(400).json({
         message: `File too large. Maximum size is ${FILE_STORAGE_CONFIG.SIZE_LIMITS[sizeType]} bytes`
       });
+      return;
     }
 
     if (req.files && Array.isArray(req.files)) {
       const oversizedFile = req.files.find(file => !isValidFileSize(file.size, sizeType));
       if (oversizedFile) {
-        return res.status(400).json({
+        res.status(400).json({
           message: `File "${oversizedFile.originalname}" is too large. Maximum size is ${FILE_STORAGE_CONFIG.SIZE_LIMITS[sizeType]} bytes`
         });
+        return;
       }
     }
 
@@ -107,8 +109,8 @@ const rateLimitUpload = (maxAttempts: number = 10, windowMinutes: number = 15) =
     }
 
     clientAttempts.count++;
-    next();
-  };
+    return next();
+};
 };
 
 // Document upload configuration
@@ -142,42 +144,48 @@ export const uploadTemp = multer({
 });
 
 // Error handling middleware for multer
-export const handleUploadError = (error: any, req: Request, res: Response, next: NextFunction) => {
+export const handleUploadError = (error: any, req: Request, res: Response, next: NextFunction): void => {
   if (error instanceof multer.MulterError) {
     switch (error.code) {
       case 'LIMIT_FILE_SIZE':
-        return res.status(400).json({
+        res.status(400).json({
           message: 'File too large',
           details: `Maximum file size is ${error.field === 'avatar' ? '2MB' : '10MB'}`
         });
+        return;
       case 'LIMIT_FILE_COUNT':
-        return res.status(400).json({
+        res.status(400).json({
           message: 'Too many files',
           details: 'Maximum number of files exceeded'
         });
+        return;
       case 'LIMIT_UNEXPECTED_FILE':
-        return res.status(400).json({
+        res.status(400).json({
           message: 'Unexpected file field',
           details: `Unexpected field: ${error.field}`
         });
+        return;
       case 'LIMIT_PART_COUNT':
-        return res.status(400).json({
+        res.status(400).json({
           message: 'Too many form fields',
           details: 'Maximum number of form fields exceeded'
         });
+        return;
       default:
-        return res.status(400).json({
+        res.status(400).json({
           message: 'Upload error',
           details: error.message
         });
+        return;
     }
   }
 
   if (error.message) {
-    return res.status(400).json({
+    res.status(400).json({
       message: 'Upload validation failed',
       details: error.message
     });
+    return;
   }
 
   next(error);
@@ -209,7 +217,7 @@ export const virusScanMiddleware = (req: Request, res: Response, next: NextFunct
 
   // In production, implement actual virus scanning here
   // For now, just continue
-  next();
+  return next();
 };
 
 // File metadata extraction middleware
@@ -240,7 +248,7 @@ export const extractFileMetadata = (req: Request, res: Response, next: NextFunct
     });
   }
 
-  next();
+  return next();
 };
 
 // Export middleware combinations for common use cases

@@ -13,7 +13,7 @@ const getActivitiesSchema = z.object({
   relatedId: z.string().optional(),
   dateFrom: z.string().datetime().optional(),
   dateTo: z.string().datetime().optional(),
-  sortBy: z.enum(['createdAt', 'action', 'userId']).default('createdAt'),
+  sortBy: z.enum(['timestamp', 'action', 'userId']).default('timestamp'),
   sortOrder: z.enum(['asc', 'desc']).default('desc')
 });
 
@@ -50,9 +50,9 @@ export const getActivityLogs = async (req: Request, res: Response) => {
     if (relatedId) where.relatedId = relatedId;
     
     if (dateFrom || dateTo) {
-      where.createdAt = {};
-      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
-      if (dateTo) where.createdAt.lte = new Date(dateTo);
+      where.timestamp = {};
+      if (dateFrom) where.timestamp.gte = new Date(dateFrom);
+      if (dateTo) where.timestamp.lte = new Date(dateTo);
     }
 
     // Get activity logs
@@ -64,7 +64,7 @@ export const getActivityLogs = async (req: Request, res: Response) => {
           action: true,
           details: true,
           relatedId: true,
-          createdAt: true,
+          timestamp: true,
           user: {
             select: {
               id: true,
@@ -88,7 +88,7 @@ export const getActivityLogs = async (req: Request, res: Response) => {
       prisma.activityLog.count({ where })
     ]);
 
-    res.json({
+    return res.json({
       activities,
       pagination: {
         page,
@@ -110,13 +110,13 @@ export const getActivityLogs = async (req: Request, res: Response) => {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ 
-        message: 'Validation error', 
-        errors: error.errors 
+      return res.status(400).json({
+        message: 'Validation error',
+        errors: error.issues
       });
     }
     console.error('Error fetching activity logs:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -146,9 +146,9 @@ export const getUserActivityLogs = async (req: Request, res: Response) => {
     if (relatedId) where.relatedId = relatedId;
     
     if (dateFrom || dateTo) {
-      where.createdAt = {};
-      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
-      if (dateTo) where.createdAt.lte = new Date(dateTo);
+      where.timestamp = {};
+      if (dateFrom) where.timestamp.gte = new Date(dateFrom);
+      if (dateTo) where.timestamp.lte = new Date(dateTo);
     }
 
     // Get activity logs
@@ -160,7 +160,7 @@ export const getUserActivityLogs = async (req: Request, res: Response) => {
           action: true,
           details: true,
           relatedId: true,
-          createdAt: true
+          timestamp: true
         },
         skip,
         take: limit,
@@ -171,7 +171,7 @@ export const getUserActivityLogs = async (req: Request, res: Response) => {
       prisma.activityLog.count({ where })
     ]);
 
-    res.json({
+    return res.json({
       activities,
       pagination: {
         page,
@@ -188,13 +188,13 @@ export const getUserActivityLogs = async (req: Request, res: Response) => {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ 
-        message: 'Validation error', 
-        errors: error.errors 
+      return res.status(400).json({
+        message: 'Validation error',
+        errors: error.issues
       });
     }
     console.error('Error fetching user activity logs:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -236,12 +236,12 @@ export const getActivityStatistics = async (req: Request, res: Response) => {
       // Recent activities
       prisma.activityLog.findMany({
         take: 20,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { timestamp: 'desc' },
         select: {
           id: true,
           action: true,
           details: true,
-          createdAt: true,
+          timestamp: true,
           user: {
             select: {
               fullName: true,
@@ -253,12 +253,12 @@ export const getActivityStatistics = async (req: Request, res: Response) => {
 
       // Daily activity stats for the last 30 days
       prisma.$queryRaw`
-        SELECT 
-          DATE(createdAt) as date,
+        SELECT
+          DATE(timestamp) as date,
           COUNT(*) as count
-        FROM ActivityLog 
-        WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-        GROUP BY DATE(createdAt)
+        FROM ActivityLog
+        WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+        GROUP BY DATE(timestamp)
         ORDER BY date DESC
       `
     ]);
@@ -287,7 +287,7 @@ export const getActivityStatistics = async (req: Request, res: Response) => {
       activityCount: item._count.id
     }));
 
-    res.json({
+    return res.json({
       overview: {
         totalActivities
       },
@@ -301,7 +301,7 @@ export const getActivityStatistics = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error fetching activity statistics:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -318,7 +318,7 @@ export const getDocumentActivities = async (req: Request, res: Response) => {
         id: true,
         createdById: true,
         assignedToId: true,
-        departments: {
+        assignedDepartments: {
           select: {
             department: {
               select: { id: true }
@@ -338,8 +338,8 @@ export const getDocumentActivities = async (req: Request, res: Response) => {
       currentUser.role === 'CORRESPONDENCE_OFFICER' ||
       document.createdById === currentUser.id ||
       document.assignedToId === currentUser.id ||
-      (currentUser.departmentId && 
-       document.departments.some(d => d.department.id === currentUser.departmentId));
+      (currentUser.departmentId &&
+       document.assignedDepartments.some(d => d.department.id === currentUser.departmentId));
 
     if (!hasAccess) {
       return res.status(403).json({ message: 'Insufficient permissions to view document activities' });
@@ -352,7 +352,7 @@ export const getDocumentActivities = async (req: Request, res: Response) => {
         id: true,
         action: true,
         details: true,
-        createdAt: true,
+        timestamp: true,
         user: {
           select: {
             id: true,
@@ -361,16 +361,16 @@ export const getDocumentActivities = async (req: Request, res: Response) => {
           }
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { timestamp: 'desc' }
     });
 
-    res.json({
+    return res.json({
       documentId,
       activities
     });
   } catch (error) {
     console.error('Error fetching document activities:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -398,7 +398,7 @@ export const getActivitySummary = async (req: Request, res: Response) => {
             ? {} 
             : { userId: currentUser.id }
           ),
-          createdAt: {
+          timestamp: {
             gte: new Date(new Date().setHours(0, 0, 0, 0))
           }
         }
@@ -411,7 +411,7 @@ export const getActivitySummary = async (req: Request, res: Response) => {
             ? {} 
             : { userId: currentUser.id }
           ),
-          createdAt: {
+          timestamp: {
             gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
           }
         }
@@ -421,17 +421,17 @@ export const getActivitySummary = async (req: Request, res: Response) => {
       prisma.activityLog.findMany({
         where: { userId: currentUser.id },
         take: 10,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { timestamp: 'desc' },
         select: {
           id: true,
           action: true,
           details: true,
-          createdAt: true
+          timestamp: true
         }
       })
     ]);
 
-    res.json({
+    return res.json({
       userStats: {
         total: userActivities,
         today: todayActivities,
@@ -441,6 +441,6 @@ export const getActivitySummary = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error fetching activity summary:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };

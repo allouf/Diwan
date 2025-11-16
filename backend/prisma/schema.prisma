@@ -23,10 +23,11 @@ enum UserRole {
 }
 
 enum DocumentStatus {
-  REGISTERED
+  DRAFT
   PENDING
-  SEEN
+  IN_PROGRESS
   COMPLETED
+  REJECTED
   ARCHIVED
 }
 
@@ -57,6 +58,7 @@ enum OutcomeType {
 model User {
   id        String   @id @default(cuid())
   name      String
+  fullName  String
   email     String   @unique
   password  String
   role      UserRole
@@ -68,10 +70,13 @@ model User {
   // Relations
   departmentId String?
   department   Department?       @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  
+
   // Documents created by this user
   documentsCreated Document[] @relation("DocumentCreator")
-  
+
+  // Documents assigned to this user
+  assignedDocuments Document[] @relation("AssignedDocuments")
+
   // Outcomes logged by this user
   outcomesLogged Outcome[]
   
@@ -90,6 +95,7 @@ model User {
 model Department {
   id           String  @id @default(cuid())
   name         String  @unique
+  code         String  @unique
   nameAr       String
   contactPerson String?
   email        String?
@@ -145,7 +151,7 @@ model Document {
   summary          String       @db.Text
   senderType       SenderType
   senderName       String
-  status           DocumentStatus @default(REGISTERED)
+  status           DocumentStatus @default(DRAFT)
   priority         Priority     @default(NORMAL)
   physicalLocation String?
   createdAt        DateTime     @default(now())
@@ -154,10 +160,13 @@ model Document {
   // Relations
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
-  
+
   createdById String
   createdBy   User   @relation("DocumentCreator", fields: [createdById], references: [id])
-  
+
+  assignedToId String?
+  assignedTo   User?   @relation("AssignedDocuments", fields: [assignedToId], references: [id])
+
   // Many-to-many with departments
   assignedDepartments DocumentDepartment[]
   
@@ -237,19 +246,25 @@ model Outcome {
 }
 
 model Attachment {
-  id           String   @id @default(cuid())
-  name         String
-  originalName String
-  size         Int
-  type         String
-  url          String
-  path         String
-  uploadedAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  name          String
+  originalName  String
+  filename      String
+  size          Int
+  type          String
+  mimetype      String
+  url           String
+  path          String
+  thumbnailPath String?
+  description   String?
+  isPublic      Boolean  @default(false)
+  uploadedBy    String
+  uploadedAt    DateTime @default(now())
 
   // Relations (either attached to document or outcome)
   documentId String?
   document   Document? @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  
+
   outcomeId String?
   outcome   Outcome? @relation(fields: [outcomeId], references: [id], onDelete: Cascade)
 
@@ -265,11 +280,12 @@ model ActivityLog {
   details            String?
   timestamp          DateTime @default(now())
   documentReference  String?
+  relatedId          String?
 
   // Relations
   userId String
   user   User   @relation(fields: [userId], references: [id])
-  
+
   documentId String?
   document   Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
 

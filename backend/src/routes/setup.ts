@@ -7,7 +7,7 @@ const router = Router();
 const prisma = new PrismaClient();
 
 // Database setup endpoint - should only be called once during deployment
-router.post('/migrate', async (req: Request, res: Response) => {
+router.post('/migrate', async (req: Request, res: Response): Promise<void> => {
   try {
     console.log('🔧 Starting database setup...');
 
@@ -15,11 +15,12 @@ router.post('/migrate', async (req: Request, res: Response) => {
     try {
       const userCount = await prisma.user.count();
       if (userCount > 0) {
-        return res.json({ 
-          success: true, 
+        res.json({
+          success: true,
           message: 'Database already set up',
-          userCount 
+          userCount
         });
+        return;
       }
     } catch (error) {
       console.log('Database not set up yet, proceeding with migration...');
@@ -80,7 +81,12 @@ router.get('/health', async (req: Request, res: Response) => {
     await prisma.$queryRaw`SELECT 1`;
     
     // Get basic stats
-    const stats = {
+    const stats: {
+      database: string;
+      timestamp: string;
+      environment: string;
+      users?: number | string;
+    } = {
       database: 'connected',
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'unknown'
@@ -110,36 +116,37 @@ router.get('/health', async (req: Request, res: Response) => {
 });
 
 // Reset database endpoint (development only)
-router.post('/reset', async (req: Request, res: Response) => {
+router.post('/reset', async (req: Request, res: Response): Promise<void> => {
   if (process.env.NODE_ENV === 'production') {
-    return res.status(403).json({
+    res.status(403).json({
       success: false,
       message: 'Reset not allowed in production'
     });
+    return;
   }
 
   try {
     console.log('🔄 Resetting database...');
-    
-    execSync('npx prisma db push --force-reset', { 
-      stdio: 'inherit',
-      cwd: process.cwd()
-    });
-    
-    execSync('npx prisma db seed', { 
+
+    execSync('npx prisma db push --force-reset', {
       stdio: 'inherit',
       cwd: process.cwd()
     });
 
-    res.json({ 
-      success: true, 
-      message: 'Database reset successfully' 
+    execSync('npx prisma db seed', {
+      stdio: 'inherit',
+      cwd: process.cwd()
+    });
+
+    res.json({
+      success: true,
+      message: 'Database reset successfully'
     });
 
   } catch (error: any) {
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });

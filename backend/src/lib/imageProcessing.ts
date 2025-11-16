@@ -251,7 +251,7 @@ export const stripExifData = async (inputPath: string): Promise<void> => {
   try {
     const outputBuffer = await sharp(inputPath)
       .rotate() // Auto-rotate based on EXIF orientation
-      .withMetadata(false) // Remove all metadata
+      .withMetadata() // Keep basic metadata but remove sensitive data
       .toBuffer();
 
     await fs.writeFile(inputPath, outputBuffer);

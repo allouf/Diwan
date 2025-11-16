@@ -15,11 +15,11 @@ export const generateAccessToken = (user: Omit<User, 'password'>): string => {
     role: user.role,
   };
 
-  return jwt.sign(payload, process.env.JWT_SECRET!, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '1h',
+  return jwt.sign(payload, process.env.JWT_SECRET as string, {
+    expiresIn: (process.env.JWT_EXPIRES_IN || '1h') as string,
     issuer: 'cms-backend',
     audience: 'cms-frontend',
-  });
+  } as jwt.SignOptions);
 };
 
 /**
@@ -32,11 +32,11 @@ export const generateRefreshToken = (user: Omit<User, 'password'>): string => {
     type: 'refresh',
   };
 
-  return jwt.sign(payload, process.env.JWT_REFRESH_SECRET!, {
-    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+  return jwt.sign(payload, process.env.JWT_REFRESH_SECRET as string, {
+    expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN || '7d') as string,
     issuer: 'cms-backend',
     audience: 'cms-frontend',
-  });
+  } as jwt.SignOptions);
 };
 
 /**

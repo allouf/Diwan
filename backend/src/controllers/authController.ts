@@ -22,7 +22,8 @@ export const login = async (
           message: `Too many login attempts. Please try again later.`,
         },
       };
-      return res.status(429).json(response);
+      res.status(429).json(response);
+      return;
     }
 
     const user = await prisma.user.findUnique({
@@ -66,7 +67,7 @@ export const login = async (
     const response: ApiResponse<LoginResponse> = {
       success: true,
       data: {
-        user: userWithoutPassword,
+        user: { ...userWithoutPassword, department: userWithoutPassword.department || undefined } as any,
         token: tokens.accessToken,
         refreshToken: tokens.refreshToken,
       },
@@ -150,7 +151,7 @@ export const refreshToken = async (
     const response: ApiResponse<LoginResponse> = {
       success: true,
       data: {
-        user: userWithoutPassword,
+        user: { ...userWithoutPassword, department: userWithoutPassword.department || undefined } as any,
         token: tokens.accessToken,
         refreshToken: tokens.refreshToken,
       },

@@ -26,7 +26,12 @@ const prisma = new PrismaClient();
 const uploadDocumentSchema = z.object({
   documentId: z.string().optional(),
   description: z.string().optional(),
-  isPublic: z.boolean().default(false)
+  isPublic: z.union([z.boolean(), z.string()]).transform(val => {
+    if (typeof val === 'string') {
+      return val === 'true';
+    }
+    return val;
+  }).default(false)
 });
 
 const fileAccessSchema = z.object({
@@ -55,6 +60,9 @@ export const uploadFiles = async (req: Request, res: Response) => {
       // Create file record in database
       const fileRecord = await prisma.attachment.create({
         data: {
+          name: file.originalname,
+          type: file.mimetype.split('/')[0] || 'file',
+          url: `/api/files/${file.filename}`,
           filename: file.filename,
           originalName: file.originalname,
           mimetype: file.mimetype,
@@ -73,7 +81,7 @@ export const uploadFiles = async (req: Request, res: Response) => {
         size: file.size,
         sizeFormatted: formatFileSize(file.size),
         thumbnailPath,
-        uploadedAt: fileRecord.createdAt
+        uploadedAt: fileRecord.uploadedAt
       });
     }
 
@@ -84,13 +92,13 @@ export const uploadFiles = async (req: Request, res: Response) => {
       `Uploaded ${files.length} files: ${files.map(f => f.originalname).join(', ')}`
     );
 
-    res.json({
+    return res.json({
       message: `Successfully uploaded ${files.length} file(s)`,
       files: uploadedFiles
     });
   } catch (error) {
     console.error('Error uploading files:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -113,7 +121,7 @@ export const uploadDocumentAttachments = async (req: Request, res: Response) => 
           id: true,
           createdById: true,
           assignedToId: true,
-          departments: {
+          assignedDepartments: {
             select: {
               department: {
                 select: { id: true }
@@ -128,13 +136,13 @@ export const uploadDocumentAttachments = async (req: Request, res: Response) => 
       }
 
       // Check permissions
-      const hasAccess = 
+      const hasAccess =
         currentUser.role === 'ADMIN' ||
         currentUser.role === 'CORRESPONDENCE_OFFICER' ||
         document.createdById === currentUser.id ||
         document.assignedToId === currentUser.id ||
-        (currentUser.departmentId && 
-         document.departments.some(d => d.department.id === currentUser.departmentId));
+        (currentUser.departmentId &&
+         document.assignedDepartments.some(d => d.department.id === currentUser.departmentId));
 
       if (!hasAccess) {
         return res.status(403).json({ message: 'Insufficient permissions to attach files to this document' });
@@ -153,6 +161,9 @@ export const uploadDocumentAttachments = async (req: Request, res: Response) => 
       // Create attachment record
       const attachment = await prisma.attachment.create({
         data: {
+          name: file.originalname,
+          type: file.mimetype.split('/')[0] || 'file',
+          url: `/api/files/${file.filename}`,
           filename: file.filename,
           originalName: file.originalname,
           mimetype: file.mimetype,
@@ -161,8 +172,8 @@ export const uploadDocumentAttachments = async (req: Request, res: Response) => 
           thumbnailPath,
           description,
           uploadedBy: currentUser.id,
-          ...(documentId && { documentId }),
-          ...(isPublic !== undefined && { isPublic })
+          isPublic: isPublic ?? false,
+          ...(documentId && { documentId })
         }
       });
 
@@ -175,7 +186,7 @@ export const uploadDocumentAttachments = async (req: Request, res: Response) => 
         sizeFormatted: formatFileSize(file.size),
         thumbnailPath,
         description: attachment.description,
-        uploadedAt: attachment.createdAt
+        uploadedAt: attachment.uploadedAt
       });
     }
 
@@ -187,19 +198,19 @@ export const uploadDocumentAttachments = async (req: Request, res: Response) => 
       documentId
     );
 
-    res.json({
+    return res.json({
       message: `Successfully uploaded ${files.length} attachment(s)`,
       attachments: uploadedFiles
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ 
-        message: 'Validation error', 
-        errors: error.errors 
+      return res.status(400).json({
+        message: 'Validation error',
+        errors: error.issues
       });
     }
     console.error('Error uploading document attachments:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -227,8 +238,8 @@ export const uploadAvatar = async (req: Request, res: Response) => {
     // Update user avatar in database
     await prisma.user.update({
       where: { id: currentUser.id },
-      data: { 
-        avatarPath: processedFilename,
+      data: {
+        avatar: processedFilename,
         updatedAt: new Date()
       }
     });
@@ -240,7 +251,7 @@ export const uploadAvatar = async (req: Request, res: Response) => {
       `Updated profile avatar: ${file.originalname}`
     );
 
-    res.json({
+    return res.json({
       message: 'Avatar uploaded successfully',
       avatar: {
         filename: processedFilename,
@@ -250,7 +261,7 @@ export const uploadAvatar = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error uploading avatar:', error);
-    res.status(500).json({ message: 'Failed to upload avatar' });
+    return res.status(500).json({ message: 'Failed to upload avatar' });
   }
 };
 
@@ -269,18 +280,13 @@ export const serveFile = async (req: Request, res: Response) => {
             id: true,
             createdById: true,
             assignedToId: true,
-            departments: {
+            assignedDepartments: {
               select: {
                 department: {
                   select: { id: true }
                 }
               }
             }
-          }
-        },
-        uploadedByUser: {
-          select: {
-            fullName: true
           }
         }
       }
@@ -291,9 +297,10 @@ export const serveFile = async (req: Request, res: Response) => {
     }
 
     // Check file access permissions
+    const isPublic = Boolean(attachment.isPublic);
     let hasAccess = false;
 
-    if (attachment.isPublic) {
+    if (isPublic) {
       hasAccess = true;
     } else if (currentUser.role === 'ADMIN' || currentUser.role === 'CORRESPONDENCE_OFFICER') {
       hasAccess = true;
@@ -302,11 +309,11 @@ export const serveFile = async (req: Request, res: Response) => {
     } else if (attachment.document) {
       // Check document access permissions
       const doc = attachment.document;
-      hasAccess = 
+      hasAccess =
         doc.createdById === currentUser.id ||
         doc.assignedToId === currentUser.id ||
-        (currentUser.departmentId && 
-         doc.departments.some(d => d.department.id === currentUser.departmentId));
+        !!(currentUser.departmentId &&
+         doc.assignedDepartments.some(d => d.department.id === currentUser.departmentId));
     }
 
     if (!hasAccess) {
@@ -334,10 +341,10 @@ export const serveFile = async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'private, max-age=3600');
 
     // Stream file
-    res.sendFile(path.resolve(attachment.path));
+    return res.sendFile(path.resolve(attachment.path));
   } catch (error) {
     console.error('Error serving file:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -360,10 +367,10 @@ export const serveAvatar = async (req: Request, res: Response) => {
     res.setHeader('ETag', `"${filename}"`);
 
     // Stream file
-    res.sendFile(path.resolve(avatarPath));
+    return res.sendFile(path.resolve(avatarPath));
   } catch (error) {
     console.error('Error serving avatar:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -385,10 +392,10 @@ export const serveThumbnail = async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'public, max-age=86400');
 
     // Stream file
-    res.sendFile(path.resolve(thumbnailPath));
+    return res.sendFile(path.resolve(thumbnailPath));
   } catch (error) {
     console.error('Error serving thumbnail:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -400,20 +407,19 @@ export const getFileInfo = async (req: Request, res: Response) => {
 
     const attachment = await prisma.attachment.findUnique({
       where: { id: fileId },
-      include: {
-        document: {
-          select: {
-            id: true,
-            subject: true,
-            referenceNumber: true
-          }
-        },
-        uploadedByUser: {
-          select: {
-            fullName: true,
-            email: true
-          }
-        }
+      select: {
+        id: true,
+        filename: true,
+        originalName: true,
+        mimetype: true,
+        size: true,
+        description: true,
+        isPublic: true,
+        uploadedAt: true,
+        uploadedBy: true,
+        documentId: true,
+        path: true,
+        thumbnailPath: true
       }
     });
 
@@ -421,19 +427,20 @@ export const getFileInfo = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'File not found' });
     }
 
-    // Check access permissions (similar to serveFile)
-    let hasAccess = attachment.isPublic || 
-                   currentUser.role === 'ADMIN' || 
-                   currentUser.role === 'CORRESPONDENCE_OFFICER' ||
-                   attachment.uploadedBy === currentUser.id;
+    // Fetch related document and user info
+    let document = null;
+    let uploadedByUser = null;
 
-    if (!hasAccess && attachment.document) {
-      const doc = await prisma.document.findUnique({
-        where: { id: attachment.document.id },
+    if (attachment.documentId) {
+      document = await prisma.document.findUnique({
+        where: { id: attachment.documentId },
         select: {
+          id: true,
+          subject: true,
+          referenceNumber: true,
           createdById: true,
           assignedToId: true,
-          departments: {
+          assignedDepartments: {
             select: {
               department: {
                 select: { id: true }
@@ -442,14 +449,31 @@ export const getFileInfo = async (req: Request, res: Response) => {
           }
         }
       });
+    }
 
-      if (doc) {
-        hasAccess = 
-          doc.createdById === currentUser.id ||
-          doc.assignedToId === currentUser.id ||
-          (currentUser.departmentId && 
-           doc.departments.some(d => d.department.id === currentUser.departmentId));
-      }
+    if (attachment.uploadedBy) {
+      uploadedByUser = await prisma.user.findUnique({
+        where: { id: attachment.uploadedBy },
+        select: {
+          fullName: true,
+          email: true
+        }
+      });
+    }
+
+    // Check access permissions (similar to serveFile)
+    const isPublic = Boolean(attachment.isPublic);
+    let hasAccess = isPublic ||
+                   currentUser.role === 'ADMIN' ||
+                   currentUser.role === 'CORRESPONDENCE_OFFICER' ||
+                   attachment.uploadedBy === currentUser.id;
+
+    if (!hasAccess && document) {
+      hasAccess =
+        document.createdById === currentUser.id ||
+        document.assignedToId === currentUser.id ||
+        !!(currentUser.departmentId &&
+         document.assignedDepartments.some(d => d.department.id === currentUser.departmentId));
     }
 
     if (!hasAccess) {
@@ -462,7 +486,7 @@ export const getFileInfo = async (req: Request, res: Response) => {
       imageMetadata = await extractImageMetadata(attachment.path);
     }
 
-    res.json({
+    return res.json({
       id: attachment.id,
       filename: attachment.filename,
       originalName: attachment.originalName,
@@ -471,10 +495,13 @@ export const getFileInfo = async (req: Request, res: Response) => {
       sizeFormatted: formatFileSize(attachment.size),
       description: attachment.description,
       isPublic: attachment.isPublic,
-      createdAt: attachment.createdAt,
-      updatedAt: attachment.updatedAt,
-      uploadedBy: attachment.uploadedByUser,
-      document: attachment.document,
+      uploadedAt: attachment.uploadedAt,
+      uploadedBy: uploadedByUser,
+      document: document ? {
+        id: document.id,
+        subject: document.subject,
+        referenceNumber: document.referenceNumber
+      } : null,
       thumbnailPath: attachment.thumbnailPath,
       imageMetadata,
       downloadUrl: `/api/files/${attachment.id}`,
@@ -484,7 +511,7 @@ export const getFileInfo = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error getting file info:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -539,10 +566,10 @@ export const deleteFileById = async (req: Request, res: Response) => {
       attachment.document?.id
     );
 
-    res.json({ message: 'File deleted successfully' });
+    return res.json({ message: 'File deleted successfully' });
   } catch (error) {
     console.error('Error deleting file:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -584,16 +611,14 @@ export const getStorageStats = async (req: Request, res: Response) => {
         take: 10
       }),
       prisma.attachment.findMany({
-        orderBy: { createdAt: 'desc' },
+        orderBy: { uploadedAt: 'desc' },
         take: 10,
         select: {
           id: true,
           originalName: true,
           size: true,
-          createdAt: true,
-          uploadedByUser: {
-            select: { fullName: true }
-          }
+          uploadedAt: true,
+          uploadedBy: true
         }
       })
     ]);
@@ -610,7 +635,7 @@ export const getStorageStats = async (req: Request, res: Response) => {
       return acc;
     }, {} as Record<string, any>);
 
-    res.json({
+    return res.json({
       overview: {
         totalFiles,
         totalSize: totalSize._sum.size || 0,
@@ -632,6 +657,6 @@ export const getStorageStats = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error fetching storage statistics:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };

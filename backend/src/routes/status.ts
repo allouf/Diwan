@@ -17,7 +17,7 @@ router.use(authenticate);
 router.patch('/:documentId', updateDocumentStatus);
 router.get('/:documentId/history', getDocumentStatusHistory);
 router.get('/:documentId/transitions', getAvailableStatusTransitions);
-router.patch('/bulk-update', requireRole(['ADMIN', 'CORRESPONDENCE_OFFICER']), bulkUpdateDocumentStatus);
+router.patch('/bulk-update', requireRole('ADMIN', 'CORRESPONDENCE_OFFICER'), bulkUpdateDocumentStatus);
 router.get('/workflow/overview', getStatusWorkflow);
 
 export default router;

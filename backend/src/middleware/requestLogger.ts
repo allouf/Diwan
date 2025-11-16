@@ -8,10 +8,10 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
   
   // Override the end method to log response time
   const originalEnd = res.end;
-  res.end = function(chunk?: any): any {
+  res.end = function(chunk?: any, encoding?: any, callback?: any): any {
     const duration = Date.now() - start;
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - ${res.statusCode} - ${duration}ms`);
-    return originalEnd.call(this, chunk);
+    return originalEnd.call(this, chunk, encoding, callback);
   };
   
   next();

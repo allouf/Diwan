@@ -13,6 +13,7 @@ declare global {
         role: UserRole;
         departmentId?: string;
         name?: string;
+        fullName?: string;
       };
     }
   }
@@ -41,6 +42,7 @@ export const authenticate = async (
         id: true,
         email: true,
         name: true,
+        fullName: true,
         role: true,
         departmentId: true,
         isActive: true,
@@ -57,6 +59,7 @@ export const authenticate = async (
       role: user.role,
       departmentId: user.departmentId || undefined,
       name: user.name,
+      fullName: user.fullName,
     };
 
     next();
@@ -86,3 +89,7 @@ export const authorize = (...allowedRoles: UserRole[]) => {
 };
 
 export const requireAdmin = authorize(UserRole.ADMIN);
+
+// Export aliases for compatibility
+export const authenticateToken = authenticate;
+export const requireRole = authorize;

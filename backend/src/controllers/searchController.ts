@@ -57,15 +57,15 @@ export const globalSearch = async (req: Request, res: Response) => {
     if (type === 'documents' || type === 'all') {
       const documentWhere: any = {
         OR: [
-          { subject: { contains: query, mode: 'insensitive' } },
-          { content: { contains: query, mode: 'insensitive' } },
-          { referenceNumber: { contains: query, mode: 'insensitive' } }
+          { subject: { contains: query, mode: 'insensitive' as const } },
+          { content: { contains: query, mode: 'insensitive' as const } },
+          { referenceNumber: { contains: query, mode: 'insensitive' as const } }
         ]
       };
 
       // Apply department restrictions for non-admin users
       if (!['ADMIN', 'CORRESPONDENCE_OFFICER'].includes(currentUser.role) && currentUser.departmentId) {
-        documentWhere.departments = {
+        documentWhere.assignedDepartments = {
           some: {
             departmentId: currentUser.departmentId
           }
@@ -87,16 +87,13 @@ export const globalSearch = async (req: Request, res: Response) => {
                 fullName: true
               }
             },
-            categories: {
+            category: {
               select: {
-                category: {
-                  select: {
-                    name: true
-                  }
-                }
+                id: true,
+                name: true
               }
             },
-            departments: {
+            assignedDepartments: {
               select: {
                 department: {
                   select: {
@@ -131,8 +128,8 @@ export const globalSearch = async (req: Request, res: Response) => {
         ['ADMIN', 'CORRESPONDENCE_OFFICER'].includes(currentUser.role)) {
       const userWhere = {
         OR: [
-          { fullName: { contains: query, mode: 'insensitive' } },
-          { email: { contains: query, mode: 'insensitive' } }
+          { fullName: { contains: query, mode: 'insensitive' as const } },
+          { email: { contains: query, mode: 'insensitive' as const } }
         ]
       };
 
@@ -144,7 +141,6 @@ export const globalSearch = async (req: Request, res: Response) => {
             fullName: true,
             email: true,
             role: true,
-            status: true,
             createdAt: true,
             department: {
               select: {
@@ -176,9 +172,9 @@ export const globalSearch = async (req: Request, res: Response) => {
     if (type === 'departments' || type === 'all') {
       const departmentWhere = {
         OR: [
-          { name: { contains: query, mode: 'insensitive' } },
-          { code: { contains: query, mode: 'insensitive' } },
-          { description: { contains: query, mode: 'insensitive' } }
+          { name: { contains: query, mode: 'insensitive' as const } },
+          { code: { contains: query, mode: 'insensitive' as const } },
+          { description: { contains: query, mode: 'insensitive' as const } }
         ]
       };
 
@@ -218,16 +214,16 @@ export const globalSearch = async (req: Request, res: Response) => {
       };
     }
 
-    res.json(results);
+    return res.json(results);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ 
-        message: 'Validation error', 
-        errors: error.errors 
+      return res.status(400).json({
+        message: 'Validation error',
+        errors: error.issues
       });
     }
     console.error('Error performing global search:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -262,9 +258,9 @@ export const advancedDocumentSearch = async (req: Request, res: Response) => {
     // Text search
     if (query) {
       where.OR = [
-        { subject: { contains: query, mode: 'insensitive' } },
-        { content: { contains: query, mode: 'insensitive' } },
-        { referenceNumber: { contains: query, mode: 'insensitive' } }
+        { subject: { contains: query, mode: 'insensitive' as const } },
+        { content: { contains: query, mode: 'insensitive' as const } },
+        { referenceNumber: { contains: query, mode: 'insensitive' as const } }
       ];
     }
 
@@ -284,7 +280,7 @@ export const advancedDocumentSearch = async (req: Request, res: Response) => {
 
     // Department filter
     if (departmentIds && departmentIds.length > 0) {
-      where.departments = {
+      where.assignedDepartments = {
         some: {
           departmentId: { in: departmentIds }
         }
@@ -331,11 +327,11 @@ export const advancedDocumentSearch = async (req: Request, res: Response) => {
 
     // Apply department restrictions for non-admin users
     if (!['ADMIN', 'CORRESPONDENCE_OFFICER'].includes(currentUser.role) && currentUser.departmentId) {
-      if (where.departments) {
+      if (where.assignedDepartments) {
         // If department filter already exists, add current user's department to the filter
-        where.departments.some.departmentId = currentUser.departmentId;
+        where.assignedDepartments.some.departmentId = currentUser.departmentId;
       } else {
-        where.departments = {
+        where.assignedDepartments = {
           some: {
             departmentId: currentUser.departmentId
           }
@@ -367,17 +363,13 @@ export const advancedDocumentSearch = async (req: Request, res: Response) => {
               fullName: true
             }
           },
-          categories: {
+          category: {
             select: {
-              category: {
-                select: {
-                  id: true,
-                  name: true
-                }
-              }
+              id: true,
+              name: true
             }
           },
-          departments: {
+          assignedDepartments: {
             select: {
               department: {
                 select: {
@@ -402,7 +394,7 @@ export const advancedDocumentSearch = async (req: Request, res: Response) => {
       prisma.document.count({ where })
     ]);
 
-    res.json({
+    return res.json({
       documents,
       pagination: {
         page,
@@ -429,13 +421,13 @@ export const advancedDocumentSearch = async (req: Request, res: Response) => {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ 
-        message: 'Validation error', 
-        errors: error.errors 
+      return res.status(400).json({
+        message: 'Validation error',
+        errors: error.issues
       });
     }
     console.error('Error performing advanced document search:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -454,10 +446,10 @@ export const getAutocompleteSuggestions = async (req: Request, res: Response) =>
           where: {
             subject: {
               contains: query,
-              mode: 'insensitive'
+              mode: 'insensitive' as const
             },
             ...((!['ADMIN', 'CORRESPONDENCE_OFFICER'].includes(currentUser.role) && currentUser.departmentId) && {
-              departments: {
+              assignedDepartments: {
                 some: {
                   departmentId: currentUser.departmentId
                 }
@@ -480,12 +472,8 @@ export const getAutocompleteSuggestions = async (req: Request, res: Response) =>
         // For content search, we'll return documents that match
         const contentResults = await prisma.document.findMany({
           where: {
-            content: {
-              contains: query,
-              mode: 'insensitive'
-            },
             ...((!['ADMIN', 'CORRESPONDENCE_OFFICER'].includes(currentUser.role) && currentUser.departmentId) && {
-              departments: {
+              assignedDepartments: {
                 some: {
                   departmentId: currentUser.departmentId
                 }
@@ -512,10 +500,10 @@ export const getAutocompleteSuggestions = async (req: Request, res: Response) =>
           where: {
             referenceNumber: {
               contains: query,
-              mode: 'insensitive'
+              mode: 'insensitive' as const
             },
             ...((!['ADMIN', 'CORRESPONDENCE_OFFICER'].includes(currentUser.role) && currentUser.departmentId) && {
-              departments: {
+              assignedDepartments: {
                 some: {
                   departmentId: currentUser.departmentId
                 }
@@ -540,10 +528,10 @@ export const getAutocompleteSuggestions = async (req: Request, res: Response) =>
           const userResults = await prisma.user.findMany({
             where: {
               OR: [
-                { fullName: { contains: query, mode: 'insensitive' } },
-                { email: { contains: query, mode: 'insensitive' } }
+                { fullName: { contains: query, mode: 'insensitive' as const } },
+                { email: { contains: query, mode: 'insensitive' as const } }
               ],
-              status: 'ACTIVE'
+              isActive: true
             },
             select: {
               id: true,
@@ -567,8 +555,8 @@ export const getAutocompleteSuggestions = async (req: Request, res: Response) =>
         const deptResults = await prisma.department.findMany({
           where: {
             OR: [
-              { name: { contains: query, mode: 'insensitive' } },
-              { code: { contains: query, mode: 'insensitive' } }
+              { name: { contains: query, mode: 'insensitive' as const } },
+              { code: { contains: query, mode: 'insensitive' as const } }
             ],
             isActive: true
           },
@@ -588,20 +576,20 @@ export const getAutocompleteSuggestions = async (req: Request, res: Response) =>
         break;
     }
 
-    res.json({
+    return res.json({
       query,
       type,
       suggestions
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ 
-        message: 'Validation error', 
-        errors: error.errors 
+      return res.status(400).json({
+        message: 'Validation error',
+        errors: error.issues
       });
     }
     console.error('Error getting autocomplete suggestions:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -642,7 +630,7 @@ export const getSearchFilters = async (req: Request, res: Response) => {
       // Users (only for admin and correspondence officers)
       ['ADMIN', 'CORRESPONDENCE_OFFICER'].includes(currentUser.role) 
         ? prisma.user.findMany({
-            where: { status: 'ACTIVE' },
+            where: { isActive: true },
             select: {
               id: true,
               fullName: true,
@@ -662,7 +650,7 @@ export const getSearchFilters = async (req: Request, res: Response) => {
         _count: { id: true },
         ...((!['ADMIN', 'CORRESPONDENCE_OFFICER'].includes(currentUser.role) && currentUser.departmentId) && {
           where: {
-            departments: {
+            assignedDepartments: {
               some: {
                 departmentId: currentUser.departmentId
               }
@@ -678,7 +666,7 @@ export const getSearchFilters = async (req: Request, res: Response) => {
         name: cat.name,
         documentCount: cat._count.documents
       })),
-      departments: departments.map(dept => ({
+      assignedDepartments: departments.map(dept => ({
         id: dept.id,
         name: dept.name,
         code: dept.code,

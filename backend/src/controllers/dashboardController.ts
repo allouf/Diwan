@@ -89,9 +89,10 @@ export const getUserStats = async (
 
     if (userRole === 'ADMIN' || userRole === 'CORRESPONDENCE_OFFICER') {
       // Full system access - get comprehensive stats
+      const documentStats = await getDocumentStats();
       stats = {
         ...stats,
-        ...(await getSystemStats(req, res, next)),
+        documentStats,
       };
     } else if (userRole === 'DEPARTMENT_HEAD' || userRole === 'DEPARTMENT_USER') {
       // Department-specific stats
@@ -357,7 +358,7 @@ export const getPerformanceMetrics = async (
       workloadDistribution,
     ] = await Promise.all([
       // Average processing time for completed documents
-      prisma.$queryRaw`
+      prisma.$queryRaw<Array<{ avg_hours: number | null }>>`
         SELECT 
           AVG(EXTRACT(EPOCH FROM (updated_at - created_at))/3600) as avg_hours
         FROM documents 
@@ -366,7 +367,7 @@ export const getPerformanceMetrics = async (
       `,
 
       // Completion rate by month
-      prisma.$queryRaw`
+      prisma.$queryRaw<Array<{ month: Date; total_created: number; completed: number; completion_rate: number }>>`
         SELECT 
           DATE_TRUNC('month', created_at) as month,
           COUNT(*) as total_created,
@@ -382,7 +383,7 @@ export const getPerformanceMetrics = async (
       `,
 
       // Average response time (time to first seen)
-      prisma.$queryRaw`
+      prisma.$queryRaw<Array<{ avg_response_hours: number | null }>>`
         SELECT 
           AVG(EXTRACT(EPOCH FROM (dse.seen_at - d.created_at))/3600) as avg_response_hours
         FROM documents d
@@ -391,7 +392,7 @@ export const getPerformanceMetrics = async (
       `,
 
       // Workload distribution by user
-      prisma.$queryRaw`
+      prisma.$queryRaw<Array<{ name: string; email: string; department_name: string | null; documents_seen: number; outcomes_created: number }>>`
         SELECT 
           u.name,
           u.email,

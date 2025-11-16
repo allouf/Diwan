@@ -21,13 +21,13 @@ router.get('/public', getPublicConfigurations);
 router.use(authenticate);
 
 // System configuration routes (admin only)
-router.get('/', requireRole(['ADMIN']), getSystemConfigurations);
-router.get('/export', requireRole(['ADMIN']), exportConfigurations);
-router.post('/import', requireRole(['ADMIN']), importConfigurations);
-router.post('/reset', requireRole(['ADMIN']), resetToDefaults);
-router.post('/bulk-update', requireRole(['ADMIN']), bulkUpdateSystemConfigurations);
-router.get('/:key', requireRole(['ADMIN']), getConfigurationByKey);
-router.put('/:key', requireRole(['ADMIN']), updateSystemConfiguration);
-router.delete('/:key', requireRole(['ADMIN']), deleteSystemConfiguration);
+router.get('/', requireRole('ADMIN'), getSystemConfigurations);
+router.get('/export', requireRole('ADMIN'), exportConfigurations);
+router.post('/import', requireRole('ADMIN'), importConfigurations);
+router.post('/reset', requireRole('ADMIN'), resetToDefaults);
+router.post('/bulk-update', requireRole('ADMIN'), bulkUpdateSystemConfigurations);
+router.get('/:key', requireRole('ADMIN'), getConfigurationByKey);
+router.put('/:key', requireRole('ADMIN'), updateSystemConfiguration);
+router.delete('/:key', requireRole('ADMIN'), deleteSystemConfiguration);
 
 export default router;

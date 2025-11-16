@@ -42,7 +42,7 @@ export interface User {
   email: string;
   role: UserRole;
   department?: Department;
-  avatar?: string;
+  avatar?: string | null;
   password?: string; // Only for backend
   createdAt?: Date;
   updatedAt?: Date;
@@ -75,7 +75,7 @@ export type DocumentStatus = 'registered' | 'pending' | 'seen' | 'completed' | '
 
 export type Priority = 'normal' | 'high' | 'urgent';
 
-export type UserRole = 'admin' | 'correspondence-officer' | 'department-head' | 'department-user';
+export type UserRole = 'ADMIN' | 'CORRESPONDENCE_OFFICER' | 'DEPARTMENT_HEAD' | 'DEPARTMENT_USER';
 
 export type OutcomeType = 'approved' | 'rejected' | 'pending-review' | 'requires-action' | 'completed' | 'on-hold';
 
@@ -162,7 +162,7 @@ export interface Notification {
 }
 
 export interface DepartmentUser extends User {
-  role: 'department-user';
+  role: 'DEPARTMENT_USER';
   department: Department;
   notifications: Notification[];
 }
