@@ -127,7 +127,7 @@ export const Layout: React.FC = () => {
             {user?.fullName}
           </div>
           <div className="text-xs text-secondary-500">
-            {user?.role.replace('_', ' ')}
+            {user?.role?.replace('_', ' ')}
           </div>
         </div>
       </div>
