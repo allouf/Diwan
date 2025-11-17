@@ -68,7 +68,7 @@ app.get('/api/health', async (req, res) => {
 
     res.status(200).json({
       status: 'OK',
-      message: 'CMS Backend Server is running',
+      message: 'HIAST CMS API is running',
       timestamp: new Date().toISOString(),
       version: '1.0.0',
       database: {
