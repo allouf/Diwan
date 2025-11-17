@@ -27,11 +27,11 @@ interface FileFilters {
   isPublic?: boolean;
 }
 
-const FILE_TYPES = [
-  { value: 'image', label: 'Images', icon: Image },
-  { value: 'document', label: 'Documents', icon: FileText },
-  { value: 'all', label: 'All Files', icon: FileIcon }
-];
+// const FILE_TYPES = [
+//   { value: 'image', label: 'Images', icon: Image },
+//   { value: 'document', label: 'Documents', icon: FileText },
+//   { value: 'all', label: 'All Files', icon: FileIcon }
+// ];
 
 const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return '0 Bytes';
@@ -307,8 +307,7 @@ export const FileManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState<FileFilters>({});
-  const [showFilters, setShowFilters] = useState(false);
+  const [filters] = useState<FileFilters>({});
   const [showUpload, setShowUpload] = useState(false);
   const [selectedFile, setSelectedFile] = useState<FileWithOwner | null>(null);
   const [showPreview, setShowPreview] = useState(false);

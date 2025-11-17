@@ -294,7 +294,7 @@ const UserModal: React.FC<{
 };
 
 export const Users: React.FC = () => {
-  const { user: currentUser, hasRole } = useAuth();
+  const { hasRole } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
