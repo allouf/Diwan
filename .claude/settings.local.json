@@ -12,7 +12,8 @@
       "Bash(python fix_notifications.py:*)",
       "Bash(npx prisma migrate:*)",
       "Bash(find:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []
