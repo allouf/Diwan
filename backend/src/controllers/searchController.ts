@@ -680,7 +680,7 @@ export const getSearchFilters = async (req: Request, res: Response) => {
       })),
       statuses: statuses.map(status => ({
         status: status.status,
-        count: status._count.id
+        count: status._count && typeof status._count === 'object' && 'id' in status._count ? status._count.id : 0
       })),
       priorities: [
         { value: 'LOW', label: 'Low' },

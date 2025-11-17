@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon src/index.ts",
-    "build": "tsc",
+    "build": "tsc --skipLibCheck",
     "start": "node dist/index.js",
     "clean": "rimraf dist",
     "build:prod": "npm run clean && npm run build",
@@ -19,7 +19,7 @@
     "db:reset": "prisma migrate reset",
     "postinstall": "prisma generate && npm rebuild sharp",
     "deploy:db": "node scripts/deploy-db.js",
-    "vercel-build": "echo 'Building backend...' && prisma generate && npm install --platform=linux --arch=x64 sharp && tsc"
+    "vercel-build": "echo 'Building backend...' && prisma generate && npm install --platform=linux --arch=x64 sharp && tsc --skipLibCheck"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
@@ -35,7 +35,13 @@
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^6.19.0",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "4.17.21",
+    "@types/jsonwebtoken": "9.0.7",
     "@types/mime-types": "^3.0.1",
+    "@types/multer": "1.4.12",
+    "@types/node": "^24.10.1",
     "@types/uuid": "^8.3.4",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
@@ -46,21 +52,15 @@
     "multer": "^2.0.2",
     "sharp": "^0.34.5",
     "socket.io": "^4.8.1",
+    "typescript": "^5.9.3",
     "uuid": "^8.3.2",
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^3.0.0",
-    "@types/cors": "^2.8.19",
-    "@types/express": "4.17.21",
-    "@types/jsonwebtoken": "9.0.7",
-    "@types/multer": "1.4.12",
-    "@types/node": "^24.10.1",
     "@vercel/node": "^3.0.0",
     "nodemon": "^3.1.11",
     "prisma": "^6.19.0",
     "rimraf": "^6.1.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "ts-node": "^10.9.2"
   }
 }
