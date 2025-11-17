@@ -17,9 +17,9 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate && npm rebuild sharp",
     "deploy:db": "node scripts/deploy-db.js",
-    "vercel-build": "echo 'Building backend...' && prisma generate && tsc"
+    "vercel-build": "echo 'Building backend...' && prisma generate && npm install --platform=linux --arch=x64 sharp && tsc"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
