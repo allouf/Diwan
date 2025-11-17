@@ -11,7 +11,7 @@ import {
   requireAdmin,
   authorize,
 } from '../middleware/auth';
-import { UserRole } from '../generated/prisma';
+import { UserRole } from '@prisma/client';
 
 const router = Router();
 

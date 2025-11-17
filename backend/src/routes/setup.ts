@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '@prisma/client';
 import { execSync } from 'child_process';
 import { authenticateToken } from '../middleware/auth';
 

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient, DocumentStatus } from '../generated/prisma';
+import { PrismaClient, DocumentStatus } from '@prisma/client';
 import { logActivity } from '../lib/db-utils';
 import { z } from 'zod';
 

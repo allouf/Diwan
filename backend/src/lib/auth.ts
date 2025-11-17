@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { User } from '../generated/prisma';
+import { User } from '@prisma/client';
 import { TokenPayload } from '../types';
 
 // Token blacklist (in production, use Redis or database)

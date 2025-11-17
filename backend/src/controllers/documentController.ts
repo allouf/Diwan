@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { DocumentStatus, Priority, SenderType } from '../generated/prisma';
+import { DocumentStatus, Priority, SenderType } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { generateReferenceNumber } from '../lib/db-utils';
 import { createError } from '../middleware/errorHandler';

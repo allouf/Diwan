@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { UserRole } from '../generated/prisma';
+import { UserRole } from '@prisma/client';
 import { verifyAccessToken, extractTokenFromHeader } from '../lib/auth';
 import { createError } from './errorHandler';
 import prisma from '../lib/prisma';

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient, UserRole } from '../generated/prisma';
+import { PrismaClient, UserRole } from '@prisma/client';
 import { logActivity } from '../lib/db-utils';
 import { hashPassword } from '../lib/password';
 import { z } from 'zod';
