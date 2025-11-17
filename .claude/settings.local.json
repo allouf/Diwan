@@ -9,7 +9,8 @@
       "Bash(cut:*)",
       "Bash(python fix_errors.py:*)",
       "Bash(git checkout:*)",
-      "Bash(python fix_notifications.py:*)"
+      "Bash(python fix_notifications.py:*)",
+      "Bash(npx prisma migrate:*)"
     ],
     "deny": [],
     "ask": []
