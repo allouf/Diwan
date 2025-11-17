@@ -70,7 +70,15 @@ export const authService = {
   // Get stored user data
   getCurrentUser: (): User | null => {
     const userData = localStorage.getItem('user');
-    return userData ? JSON.parse(userData) : null;
+    if (!userData || userData === 'undefined' || userData === 'null') {
+      return null;
+    }
+    try {
+      return JSON.parse(userData);
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      return null;
+    }
   },
 
   // Check if user is authenticated
