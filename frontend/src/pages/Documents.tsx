@@ -88,7 +88,7 @@ const FilterDropdown: React.FC<{
 };
 
 export const Documents: React.FC = () => {
-  const { user, hasAnyRole } = useAuth();
+  const { hasAnyRole } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');

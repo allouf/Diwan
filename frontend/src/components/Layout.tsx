@@ -52,7 +52,7 @@ const navigation: NavItem[] = [
 export const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { user, logout, hasRole, hasAnyRole } = useAuth();
+  const { user, logout, hasAnyRole } = useAuth();
   const location = useLocation();
 
   const handleLogout = async () => {
