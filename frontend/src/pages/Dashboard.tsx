@@ -43,12 +43,12 @@ const StatCard: React.FC<{
   color: string;
   trend?: number;
 }> = ({ title, value, icon: Icon, color, trend }) => (
-  <div className="bg-white rounded-lg shadow-sm p-6 border border-secondary-200">
+  <div className="bg-white rounded-lg shadow-sm p-6 border border-secondary-200 hover:shadow-md transition-shadow">
     <div className="flex items-center justify-between">
-      <div>
-        <p className="text-sm font-medium text-secondary-600">{title}</p>
-        <p className="text-2xl font-bold text-secondary-900 mt-2">
-          {value.toLocaleString()}
+      <div className="flex-1">
+        <p className="text-sm font-medium text-secondary-600 mb-2">{title}</p>
+        <p className="text-3xl font-bold text-secondary-900">
+          {(value || 0).toLocaleString()}
         </p>
         {trend !== undefined && (
           <p className={`text-sm mt-1 flex items-center ${
@@ -168,17 +168,17 @@ export const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-7xl">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-secondary-900">Dashboard</h1>
-        <p className="text-secondary-600 mt-1">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-secondary-900 mb-2">Dashboard</h1>
+        <p className="text-base text-secondary-600">
           Welcome back! Here's what's happening with your correspondence management system.
         </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
           title="Total Documents"
           value={stats.totalDocuments}
@@ -209,8 +209,8 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow-sm p-6 border border-secondary-200">
-        <h2 className="text-lg font-semibold text-secondary-900 mb-4">Quick Actions</h2>
+      <div className="bg-white rounded-lg shadow-sm p-6 border border-secondary-200 mb-8">
+        <h2 className="text-xl font-semibold text-secondary-900 mb-6">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button className="flex items-center p-4 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors">
             <FileText className="w-5 h-5 text-primary-600 mr-3" />
@@ -230,7 +230,7 @@ export const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Documents */}
         <div className="bg-white rounded-lg shadow-sm p-6 border border-secondary-200">
-          <h2 className="text-lg font-semibold text-secondary-900 mb-4">Recent Documents</h2>
+          <h2 className="text-xl font-semibold text-secondary-900 mb-6">Recent Documents</h2>
           {recentDocuments.length > 0 ? (
             <div className="space-y-4">
               {recentDocuments.map((document) => (
@@ -259,7 +259,7 @@ export const Dashboard: React.FC = () => {
 
         {/* Recent Activities */}
         <div className="bg-white rounded-lg shadow-sm p-6 border border-secondary-200">
-          <h2 className="text-lg font-semibold text-secondary-900 mb-4">Recent Activities</h2>
+          <h2 className="text-xl font-semibold text-secondary-900 mb-6">Recent Activities</h2>
           {recentActivities.length > 0 ? (
             <div className="space-y-4">
               {recentActivities.map((activity) => {
