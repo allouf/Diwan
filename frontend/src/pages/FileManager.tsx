@@ -1,8 +1,9 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react';
-import { 
-  Upload, Grid, List, Search, Filter, Download, Eye, 
+import {
+  Upload, Grid, List, Search, Download, Eye,
   Trash2, FolderOpen, FileText, Image, File as FileIcon,
-  Calendar, User, HardDrive, Settings
+  HardDrive
 } from 'lucide-react';
 import { FileUpload, UploadedFile } from '../components/FileUpload';
 import { useAuth } from '../contexts/AuthContext';

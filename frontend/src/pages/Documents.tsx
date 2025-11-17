@@ -1,7 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, Search, Filter, Download, Eye, Edit, Trash2, 
-  FileText, Calendar, User, Tag, ChevronDown, X
+import {
+  Plus, Search, Filter, Download, Eye, Edit, Trash2,
+  FileText, ChevronDown, X
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api';

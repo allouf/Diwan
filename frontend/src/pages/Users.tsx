@@ -1,7 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, Search, Edit, Trash2, Eye, UserCheck, UserX, 
-  Mail, Phone, Building, Shield, Calendar, MoreVertical,
+import {
+  Plus, Search, Edit, Trash2, UserCheck, UserX,
+  Mail, Phone, Building, Shield,
   Filter, ChevronDown, X
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
