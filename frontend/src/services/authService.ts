@@ -4,14 +4,29 @@ import { LoginRequest, LoginResponse, User, ChangePasswordForm, UpdateProfileFor
 export const authService = {
   // Login user
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
-    const response = await apiUtils.post<LoginResponse>('/auth/login', credentials);
-    
-    // Store tokens and user data
-    localStorage.setItem('accessToken', response.accessToken);
-    localStorage.setItem('refreshToken', response.refreshToken);
-    localStorage.setItem('user', JSON.stringify(response.user));
-    
-    return response;
+    const response = await apiUtils.post<any>('/auth/login', credentials);
+
+    // Extract data from the {success: true, data: {...}} wrapper
+    const loginData = response.data || response;
+
+    // Store tokens and user data (backend returns 'token' not 'accessToken')
+    const accessToken = loginData.token || loginData.accessToken;
+    const refreshToken = loginData.refreshToken;
+    const user = loginData.user;
+
+    if (!accessToken || !refreshToken || !user) {
+      throw new Error('Invalid response from server');
+    }
+
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+    localStorage.setItem('user', JSON.stringify(user));
+
+    return {
+      accessToken,
+      refreshToken,
+      user
+    };
   },
 
   // Logout user
