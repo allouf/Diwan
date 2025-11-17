@@ -6,11 +6,11 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api';
-import { User, UserRole } from '../types';
+import { User, Role } from '../types';
 import { toast } from 'react-hot-toast';
 
 interface UserFilters {
-  role?: UserRole;
+  role?: Role;
   department?: string;
   status?: 'active' | 'inactive';
 }
@@ -22,7 +22,7 @@ const roleOptions = [
   { value: 'DEPARTMENT_USER', label: 'Department User', color: 'bg-green-100 text-green-800' }
 ];
 
-const RoleBadge: React.FC<{ role: UserRole }> = ({ role }) => {
+const RoleBadge: React.FC<{ role: Role }> = ({ role }) => {
   const config = roleOptions.find(opt => opt.value === role);
   return (
     <span className={`px-2 py-1 text-xs font-medium rounded-full ${config?.color || 'bg-gray-100 text-gray-800'}`}>
@@ -102,7 +102,7 @@ const UserModal: React.FC<{
     fullName: '',
     email: '',
     phone: '',
-    role: 'DEPARTMENT_USER' as UserRole,
+    role: Role.DEPARTMENT_USER,
     departmentId: '',
     isActive: true
   });
@@ -119,14 +119,14 @@ const UserModal: React.FC<{
           phone: user.phone || '',
           role: user.role,
           departmentId: user.departmentId || '',
-          isActive: user.isActive
+          isActive: user.isActive ?? true
         });
       } else {
         setFormData({
           fullName: '',
           email: '',
           phone: '',
-          role: 'DEPARTMENT_USER',
+          role: Role.DEPARTMENT_USER,
           departmentId: '',
           isActive: true
         });
@@ -226,7 +226,7 @@ const UserModal: React.FC<{
                 <select
                   required
                   value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value as Role })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
                   {roleOptions.map(role => (
@@ -364,7 +364,7 @@ export const Users: React.FC = () => {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
+    if (!window.confirm('Are you sure you want to delete this user?')) return;
 
     try {
       await apiService.delete(`/users/${userId}`);
@@ -478,7 +478,7 @@ export const Users: React.FC = () => {
                 title="Role"
                 options={roleOptions.map(r => ({ value: r.value, label: r.label }))}
                 value={filters.role}
-                onChange={(value) => handleFilterChange('role', value as UserRole)}
+                onChange={(value) => handleFilterChange('role', value as Role)}
                 onClear={() => handleFilterClear('role')}
               />
               <FilterDropdown
@@ -578,7 +578,7 @@ export const Users: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <StatusBadge isActive={user.isActive} />
+                    <StatusBadge isActive={user.isActive ?? false} />
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
                     {user.lastLoginAt ? formatDate(user.lastLoginAt) : 'Never'}
@@ -596,7 +596,7 @@ export const Users: React.FC = () => {
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleToggleUserStatus(user.id, user.isActive)}
+                        onClick={() => handleToggleUserStatus(user.id, user.isActive ?? false)}
                         className={`text-gray-400 hover:${user.isActive ? 'text-red-600' : 'text-green-600'}`}
                         title={user.isActive ? 'Deactivate user' : 'Activate user'}
                       >

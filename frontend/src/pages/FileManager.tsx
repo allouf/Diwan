@@ -378,7 +378,7 @@ export const FileManager: React.FC = () => {
   };
 
   const handleDelete = async (file: FileWithOwner) => {
-    if (!confirm(`Are you sure you want to delete ${file.originalName}?`)) return;
+    if (!window.confirm(`Are you sure you want to delete ${file.originalName}?`)) return;
 
     try {
       await apiService.delete(`/files/${file.id}`);

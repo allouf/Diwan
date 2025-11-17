@@ -17,11 +17,11 @@ interface DashboardStats {
 
 interface RecentDocument {
   id: string;
-  title: string;
+  subject: string;
   referenceNumber: string;
   status: string;
   createdAt: string;
-  sender?: {
+  createdBy?: {
     fullName: string;
   };
 }
@@ -237,10 +237,10 @@ export const Dashboard: React.FC = () => {
                 <div key={document.id} className="flex items-center justify-between py-3 border-b border-secondary-100 last:border-b-0">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-secondary-900 truncate">
-                      {document.title}
+                      {document.subject}
                     </p>
                     <p className="text-xs text-secondary-500">
-                      {document.referenceNumber} • {document.sender?.fullName}
+                      {document.referenceNumber} • {document.createdBy?.fullName}
                     </p>
                     <p className="text-xs text-secondary-400 mt-1">
                       {formatDate(document.createdAt)}

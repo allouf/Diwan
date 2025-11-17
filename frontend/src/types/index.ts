@@ -15,10 +15,13 @@ export interface User {
   id: string;
   email: string;
   fullName: string;
+  phone?: string;
   role: Role;
   status: UserStatus;
+  isActive?: boolean;
   departmentId?: string;
   avatarPath?: string;
+  lastLoginAt?: string;
   createdAt: string;
   updatedAt: string;
   department?: Department;

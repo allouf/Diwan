@@ -246,5 +246,8 @@ export const apiHelpers = {
   }
 };
 
+// Export as apiService for backwards compatibility
+export const apiService = api;
+
 // Export the configured API instance as default
 export default api;

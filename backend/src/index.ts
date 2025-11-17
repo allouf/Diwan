@@ -53,14 +53,44 @@ app.use(requestLogger);
 // Static file serving for uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    message: 'CMS Backend Server is running',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0'
-  });
+// Health check endpoint with database status
+app.get('/api/health', async (req, res) => {
+  try {
+    // Check database connectivity
+    await prisma.$queryRaw`SELECT 1`;
+
+    // Get database stats
+    const [userCount, documentCount, departmentCount] = await Promise.all([
+      prisma.user.count(),
+      prisma.document.count(),
+      prisma.department.count()
+    ]);
+
+    res.status(200).json({
+      status: 'OK',
+      message: 'CMS Backend Server is running',
+      timestamp: new Date().toISOString(),
+      version: '1.0.0',
+      database: {
+        status: 'connected',
+        stats: {
+          users: userCount,
+          documents: documentCount,
+          departments: departmentCount
+        }
+      }
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'ERROR',
+      message: 'Database connection failed',
+      timestamp: new Date().toISOString(),
+      database: {
+        status: 'disconnected',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    });
+  }
 });
 
 // API Routes

@@ -219,7 +219,7 @@ export const Documents: React.FC = () => {
   };
 
   const handleDeleteDocument = async (documentId: string) => {
-    if (!confirm('Are you sure you want to delete this document?')) return;
+    if (!window.confirm('Are you sure you want to delete this document?')) return;
 
     try {
       await apiService.delete(`/documents/${documentId}`);
@@ -421,7 +421,7 @@ export const Documents: React.FC = () => {
                       </div>
                       <div className="ml-3">
                         <p className="text-sm font-medium text-gray-900">
-                          {document.title}
+                          {document.subject}
                         </p>
                         <p className="text-sm text-gray-500">
                           {document.referenceNumber}
@@ -433,7 +433,7 @@ export const Documents: React.FC = () => {
                     <StatusBadge status={document.status} />
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">
-                    {document.sender?.fullName || 'Unknown'}
+                    {document.createdBy?.fullName || 'Unknown'}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
                     {formatDate(document.createdAt)}
