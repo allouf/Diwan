@@ -120,12 +120,14 @@ export const Documents: React.FC = () => {
       };
 
       const response = await apiService.get('/documents', { params });
-      setDocuments(response.data.documents);
-      setTotalPages(response.data.pagination.pages);
-      setTotalDocuments(response.data.pagination.total);
+      const data = response.data || response;
+      setDocuments(data.documents || []);
+      setTotalPages(data.pagination?.pages || 1);
+      setTotalDocuments(data.pagination?.total || 0);
     } catch (error) {
       console.error('Error loading documents:', error);
       toast.error('Failed to load documents');
+      setDocuments([]);
     } finally {
       setLoading(false);
     }
@@ -138,21 +140,26 @@ export const Documents: React.FC = () => {
         apiService.get('/departments')
       ]);
 
+      const categoriesData = categoriesRes.data || categoriesRes;
+      const departmentsData = departmentsRes.data || departmentsRes;
+
       setCategories(
-        categoriesRes.data.map((cat: any) => ({ 
-          value: cat.id, 
-          label: cat.name 
+        (Array.isArray(categoriesData) ? categoriesData : []).map((cat: any) => ({
+          value: cat.id,
+          label: cat.name
         }))
       );
-      
+
       setDepartments(
-        departmentsRes.data.map((dept: any) => ({ 
-          value: dept.id, 
-          label: dept.name 
+        (Array.isArray(departmentsData) ? departmentsData : []).map((dept: any) => ({
+          value: dept.id,
+          label: dept.name
         }))
       );
     } catch (error) {
       console.error('Error loading filter options:', error);
+      setCategories([]);
+      setDepartments([]);
     }
   };
 
