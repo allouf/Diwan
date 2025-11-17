@@ -29,7 +29,11 @@
       "Bash(git push:*)",
       "Bash(timeout 180 npm run build)",
       "Bash(vercel ls)",
-      "Bash(npm start)"
+      "Bash(npm start)",
+      "Bash(vercel logs:*)",
+      "Bash(vercel:*)",
+      "Bash(curl:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []
