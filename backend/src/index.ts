@@ -8,6 +8,7 @@ import path from 'path';
 // Load environment variables
 dotenv.config();
 
+import prisma from './lib/prisma';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 
