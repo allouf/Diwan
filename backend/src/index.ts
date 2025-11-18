@@ -29,7 +29,6 @@ import { fileCleanupService } from './lib/fileCleanup';
 import { ensureDirectoriesExist } from './lib/fileStorage';
 
 const app = express();
-const server = createServer(app);
 
 // Enhanced CORS Configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(origin => origin.trim()) || [
@@ -60,16 +59,8 @@ const corsOptions = {
 // Apply CORS middleware
 app.use(cors(corsOptions));
 
-// Explicit OPTIONS handler for all routes
-app.options('*', cors(corsOptions));
-
-// Socket.IO with CORS
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    credentials: true
-  }
-});
+// Remove the problematic line that was causing the path error
+// app.options('*', cors(corsOptions)); // ← REMOVE THIS LINE
 
 const PORT = process.env.PORT || 5000;
 
@@ -80,8 +71,13 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Request logging
 app.use(requestLogger);
 
-// Static file serving for uploads
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Static file serving for uploads - disable in Vercel or use /tmp
+if (process.env.VERCEL !== '1') {
+  app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+} else {
+  // In Vercel, use /tmp directory for file operations
+  app.use('/uploads', express.static('/tmp/uploads'));
+}
 
 // CORS Test Endpoint (for debugging)
 app.get('/api/cors-test', (req, res) => {
@@ -147,50 +143,57 @@ app.use('/api/activities', activityRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/files', fileRoutes);
 
-// Socket.IO configuration
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-
-  // Join user to their department room
-  socket.on('join-department', (departmentId: string) => {
-    socket.join(`department-${departmentId}`);
-    console.log(`User ${socket.id} joined department-${departmentId}`);
-  });
-
-  // Handle user disconnect
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-  });
-});
-
-// Store io instance globally for use in controllers
-declare global {
-  var io: Server;
-}
-global.io = io;
-
-// Error handling middleware (should be last)
-app.use(errorHandler);
-
-// Initialize file storage
-ensureDirectoriesExist().then(() => {
-  console.log('📁 File storage directories initialized');
-  
-  // Start file cleanup service (runs every 24 hours)
-  fileCleanupService.startAutomaticCleanup(24);
-  console.log('🧹 File cleanup service started');
-}).catch(error => {
-  console.error('❌ Failed to initialize file storage:', error);
-});
-
-// Start server (only in non-serverless environment)
+// Socket.IO only in non-serverless environment
+let io: Server;
 if (process.env.VERCEL !== '1') {
+  const server = createServer(app);
+  io = new Server(server, {
+    cors: {
+      origin: allowedOrigins,
+      credentials: true
+    }
+  });
+
+  io.on('connection', (socket) => {
+    console.log('User connected:', socket.id);
+
+    socket.on('join-department', (departmentId: string) => {
+      socket.join(`department-${departmentId}`);
+      console.log(`User ${socket.id} joined department-${departmentId}`);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('User disconnected:', socket.id);
+    });
+  });
+
+  // Store io instance globally for use in controllers
+  global.io = io;
+
   server.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📱 Environment: ${process.env.NODE_ENV}`);
     console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
-    console.log(`📂 File uploads: /api/files/upload`);
-    console.log(`🎯 CORS test: http://localhost:${PORT}/api/cors-test`);
+  });
+} else {
+  // In Vercel, create a dummy io instance
+  io = new Server();
+  global.io = io;
+}
+
+// Error handling middleware (should be last)
+app.use(errorHandler);
+
+// Initialize file storage - only in non-serverless
+if (process.env.VERCEL !== '1') {
+  ensureDirectoriesExist().then(() => {
+    console.log('📁 File storage directories initialized');
+    
+    // Start file cleanup service (runs every 24 hours)
+    fileCleanupService.startAutomaticCleanup(24);
+    console.log('🧹 File cleanup service started');
+  }).catch(error => {
+    console.error('❌ Failed to initialize file storage:', error);
   });
 }
 
