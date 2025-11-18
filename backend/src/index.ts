@@ -30,9 +30,43 @@ import { ensureDirectoriesExist } from './lib/fileStorage';
 
 const app = express();
 const server = createServer(app);
+
+// Enhanced CORS Configuration
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(origin => origin.trim()) || [
+  'https://diwan-ochre.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:3001'
+];
+
+console.log('🚀 Allowed CORS origins:', allowedOrigins);
+
+const corsOptions = {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log('❌ Blocked by CORS:', origin);
+      callback(new Error(`Not allowed by CORS: ${origin}`));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+};
+
+// Apply CORS middleware
+app.use(cors(corsOptions));
+
+// Explicit OPTIONS handler for all routes
+app.options('*', cors(corsOptions));
+
+// Socket.IO with CORS
 const io = new Server(server, {
   cors: {
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+    origin: allowedOrigins,
     credentials: true
   }
 });
@@ -40,11 +74,6 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
-  credentials: true
-}));
-
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -53,6 +82,16 @@ app.use(requestLogger);
 
 // Static file serving for uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// CORS Test Endpoint (for debugging)
+app.get('/api/cors-test', (req, res) => {
+  res.json({ 
+    message: 'CORS test successful',
+    origin: req.headers.origin,
+    allowedOrigins: allowedOrigins,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Health check endpoint with database status
 app.get('/api/health', async (req, res) => {
@@ -151,6 +190,7 @@ if (process.env.VERCEL !== '1') {
     console.log(`📱 Environment: ${process.env.NODE_ENV}`);
     console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
     console.log(`📂 File uploads: /api/files/upload`);
+    console.log(`🎯 CORS test: http://localhost:${PORT}/api/cors-test`);
   });
 }
 

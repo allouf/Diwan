@@ -33,7 +33,13 @@
       "Bash(vercel logs:*)",
       "Bash(vercel:*)",
       "Bash(curl:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(timeout 15 bash:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(timeout 10 bash:*)",
+      "Bash(npx kill-port 3000)",
+      "Bash(timeout 30 bash:*)"
     ],
     "deny": [],
     "ask": []
