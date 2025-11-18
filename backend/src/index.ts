@@ -143,6 +143,11 @@ app.use('/api/activities', activityRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/files', fileRoutes);
 
+// Declare global io type
+declare global {
+  var io: Server;
+}
+
 // Socket.IO only in non-serverless environment
 let io: Server;
 if (process.env.VERCEL !== '1') {
