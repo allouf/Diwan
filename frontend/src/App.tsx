@@ -9,6 +9,7 @@ import { Documents } from './pages/Documents';
 import { CreateDocument } from './pages/CreateDocument';
 import { Users } from './pages/Users';
 import { FileManager } from './pages/FileManager';
+import { Notifications } from './pages/Notifications';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
 
@@ -45,7 +46,7 @@ function App() {
                 <Route path="documents/new" element={<CreateDocument />} />
                 <Route path="users" element={<Users />} />
                 <Route path="files" element={<FileManager />} />
-                <Route path="notifications" element={<div className="p-4">Notifications Page (Coming Soon)</div>} />
+                <Route path="notifications" element={<Notifications />} />
                 <Route path="settings" element={<div className="p-4">Settings Page (Coming Soon)</div>} />
                 <Route path="profile" element={<div className="p-4">Profile Page (Coming Soon)</div>} />
               </Route>

@@ -227,7 +227,10 @@ export const Dashboard: React.FC = () => {
               <span className="text-sm font-medium text-primary-700">Create New Document</span>
             </button>
           )}
-          <button className="flex items-center p-4 border border-secondary-200 rounded-lg hover:bg-secondary-50 transition-colors">
+          <button
+            onClick={() => navigate('/notifications')}
+            className="flex items-center p-4 border border-secondary-200 rounded-lg hover:bg-secondary-50 transition-colors"
+          >
             <Bell className="w-5 h-5 text-secondary-600 mr-3" />
             <span className="text-sm font-medium text-secondary-700">View Notifications</span>
           </button>
