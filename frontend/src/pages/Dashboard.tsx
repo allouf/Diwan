@@ -31,12 +31,15 @@ interface RecentDocument {
 
 interface RecentActivity {
   id: string;
-  type: string;
-  description: string;
-  performedBy: {
+  action: string;
+  details: string;
+  timestamp: string;
+  user: {
+    id: string;
     fullName: string;
+    email: string;
+    role: string;
   };
-  createdAt: string;
 }
 
 const StatCard: React.FC<{
@@ -151,17 +154,20 @@ export const Dashboard: React.FC = () => {
     });
   };
 
-  const getActivityIcon = (type: string) => {
-    switch (type.toLowerCase()) {
-      case 'document_created':
-        return FileText;
-      case 'document_updated':
-        return Clock;
-      case 'user_login':
-        return Users;
-      default:
-        return Activity;
+  const getActivityIcon = (action: string) => {
+    if (!action) return Activity;
+
+    const actionLower = action.toLowerCase();
+    if (actionLower.includes('created') || actionLower.includes('create')) {
+      return FileText;
     }
+    if (actionLower.includes('updated') || actionLower.includes('update')) {
+      return Clock;
+    }
+    if (actionLower.includes('login')) {
+      return Users;
+    }
+    return Activity;
   };
 
   if (loading) {
@@ -277,7 +283,7 @@ export const Dashboard: React.FC = () => {
           {recentActivities.length > 0 ? (
             <div className="space-y-4">
               {recentActivities.map((activity) => {
-                const ActivityIcon = getActivityIcon(activity.type);
+                const ActivityIcon = getActivityIcon(activity.action);
                 return (
                   <div key={activity.id} className="flex items-start space-x-3 py-2">
                     <div className="flex-shrink-0">
@@ -287,10 +293,10 @@ export const Dashboard: React.FC = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-secondary-900">
-                        {activity.description}
+                        {activity.details}
                       </p>
                       <p className="text-xs text-secondary-500 mt-1">
-                        {activity.performedBy.fullName} • {formatDate(activity.createdAt)}
+                        {activity.user.fullName} • {formatDate(activity.timestamp)}
                       </p>
                     </div>
                   </div>
