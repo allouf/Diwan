@@ -6,8 +6,8 @@ const prisma = new PrismaClient();
 
 // Validation schemas
 const getActivitiesSchema = z.object({
-  page: z.number().min(1).default(1),
-  limit: z.number().min(1).max(100).default(20),
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(20),
   userId: z.string().optional(),
   action: z.string().optional(),
   relatedId: z.string().optional(),
