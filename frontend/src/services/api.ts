@@ -35,6 +35,10 @@ const createApiInstance = (): AxiosInstance => {
   // Response interceptor - handle token refresh and errors
   instance.interceptors.response.use(
     (response: AxiosResponse) => {
+      // Unwrap {success: true, data: ...} format from backend
+      if (response.data && typeof response.data === 'object' && 'success' in response.data && 'data' in response.data) {
+        response.data = response.data.data;
+      }
       return response;
     },
     async (error: AxiosError) => {
@@ -48,14 +52,26 @@ const createApiInstance = (): AxiosInstance => {
             const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
               refreshToken
             });
-            
-            const { accessToken } = response.data;
+
+            // Handle both {success, data: {accessToken}} and {accessToken} formats
+            let accessToken;
+            if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+              accessToken = response.data.data?.accessToken || response.data.data?.token;
+            } else {
+              accessToken = response.data?.accessToken || response.data?.token;
+            }
+
+            if (!accessToken) {
+              throw new Error('No access token received');
+            }
+
             localStorage.setItem('accessToken', accessToken);
-            
+
             // Retry original request with new token
             if (original.headers) {
               original.headers.Authorization = `Bearer ${accessToken}`;
             }
+            original.skipAuthRefresh = true; // Prevent infinite loop
             return instance(original);
           }
         } catch (refreshError) {
