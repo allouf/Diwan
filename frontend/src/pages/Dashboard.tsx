@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  FileText, Users, Clock, CheckCircle, AlertCircle, 
+import {
+  FileText, Users, Clock, CheckCircle, AlertCircle,
   TrendingUp, Calendar, Bell, Activity
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { toast } from 'react-hot-toast';
+import { authService } from '../services/authService';
+import { Role } from '../types';
 
 interface DashboardStats {
   totalDocuments: number;
@@ -104,6 +106,7 @@ export const Dashboard: React.FC = () => {
   const [recentDocuments, setRecentDocuments] = useState<RecentDocument[]>([]);
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  const currentUser = authService.getCurrentUser();
 
   useEffect(() => {
     loadDashboardData();
@@ -212,10 +215,16 @@ export const Dashboard: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm p-6 border border-secondary-200 mb-8">
         <h2 className="text-xl font-semibold text-secondary-900 mb-6">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="flex items-center p-4 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors">
-            <FileText className="w-5 h-5 text-primary-600 mr-3" />
-            <span className="text-sm font-medium text-primary-700">Create New Document</span>
-          </button>
+          {/* Create New Document - Only for Correspondence Officers */}
+          {currentUser?.role === Role.CORRESPONDENCE_OFFICER && (
+            <button
+              onClick={() => window.location.href = '/documents/new'}
+              className="flex items-center p-4 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors"
+            >
+              <FileText className="w-5 h-5 text-primary-600 mr-3" />
+              <span className="text-sm font-medium text-primary-700">Create New Document</span>
+            </button>
+          )}
           <button className="flex items-center p-4 border border-secondary-200 rounded-lg hover:bg-secondary-50 transition-colors">
             <Bell className="w-5 h-5 text-secondary-600 mr-3" />
             <span className="text-sm font-medium text-secondary-700">View Notifications</span>
