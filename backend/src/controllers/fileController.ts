@@ -660,3 +660,158 @@ export const getStorageStats = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+/**
+ * List all files with pagination and filters
+ * GET /api/files
+ */
+export const listFiles = async (req: Request, res: Response) => {
+  try {
+    const {
+      page = 1,
+      limit = 24,
+      search,
+      type,
+      dateFrom,
+      dateTo,
+      owner,
+      isPublic
+    } = req.query;
+
+    const currentUser = req.user!;
+    const skip = (Number(page) - 1) * Number(limit);
+
+    // Build where clause
+    const where: any = {};
+
+    // Search by filename or original name
+    if (search) {
+      where.OR = [
+        { filename: { contains: search as string, mode: 'insensitive' } },
+        { originalName: { contains: search as string, mode: 'insensitive' } }
+      ];
+    }
+
+    // Filter by file type (mimetype)
+    if (type) {
+      where.mimetype = { contains: type as string, mode: 'insensitive' };
+    }
+
+    // Filter by upload date range
+    if (dateFrom || dateTo) {
+      where.uploadedAt = {};
+      if (dateFrom) where.uploadedAt.gte = new Date(dateFrom as string);
+      if (dateTo) where.uploadedAt.lte = new Date(dateTo as string);
+    }
+
+    // Filter by owner
+    if (owner) {
+      where.uploadedBy = owner as string;
+    }
+
+    // Filter by public/private
+    if (isPublic !== undefined) {
+      where.isPublic = isPublic === 'true';
+    }
+
+    // Non-admin users can only see their own files or public files
+    if (currentUser.role !== 'ADMIN' && currentUser.role !== 'CORRESPONDENCE_OFFICER') {
+      where.OR = [
+        { uploadedBy: currentUser.id },
+        { isPublic: true }
+      ];
+    }
+
+    // Get files with pagination
+    const [files, total] = await Promise.all([
+      prisma.attachment.findMany({
+        where,
+        skip,
+        take: Number(limit),
+        orderBy: { uploadedAt: 'desc' },
+        include: {
+          document: {
+            select: {
+              id: true,
+              referenceNumber: true,
+              subject: true
+            }
+          }
+        }
+      }),
+      prisma.attachment.count({ where })
+    ]);
+
+    const totalPages = Math.ceil(total / Number(limit));
+
+    return res.json({
+      success: true,
+      data: {
+        files,
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total,
+          pages: totalPages
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error listing files:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+/**
+ * Get file statistics summary
+ * GET /api/files/stats
+ */
+export const getFileStats = async (req: Request, res: Response) => {
+  try {
+    const currentUser = req.user!;
+
+    // Build where clause based on user role
+    const where: any = {};
+    if (currentUser.role !== 'ADMIN' && currentUser.role !== 'CORRESPONDENCE_OFFICER') {
+      where.OR = [
+        { uploadedBy: currentUser.id },
+        { isPublic: true }
+      ];
+    }
+
+    // Get summary statistics
+    const [totalFiles, totalSize, filesByType] = await Promise.all([
+      prisma.attachment.count({ where }),
+      prisma.attachment.aggregate({
+        where,
+        _sum: { size: true }
+      }),
+      prisma.attachment.groupBy({
+        by: ['mimetype'],
+        where,
+        _count: { id: true },
+        _sum: { size: true },
+        orderBy: { _count: { id: 'desc' } },
+        take: 10
+      })
+    ]);
+
+    return res.json({
+      success: true,
+      data: {
+        totalFiles,
+        totalSize: totalSize._sum.size || 0,
+        totalSizeFormatted: formatFileSize(totalSize._sum.size || 0),
+        filesByType: filesByType.map(item => ({
+          mimetype: item.mimetype,
+          count: item._count.id,
+          size: item._sum.size || 0,
+          sizeFormatted: formatFileSize(item._sum.size || 0)
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching file statistics:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};

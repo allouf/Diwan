@@ -8,10 +8,12 @@ import {
   serveThumbnail,
   getFileInfo,
   deleteFileById,
-  getStorageStats
+  getStorageStats,
+  listFiles,
+  getFileStats
 } from '../controllers/fileController';
 import { authenticate, requireRole } from '../middleware/auth';
-import { 
+import {
   documentUploadMiddleware,
   avatarUploadMiddleware,
   tempUploadMiddleware
@@ -27,6 +29,10 @@ router.get('/thumbnail/:filename', serveThumbnail);
 
 // Apply authentication to all other routes
 router.use(authenticate);
+
+// File listing and stats (must come before :fileId route)
+router.get('/stats', getFileStats);
+router.get('/', listFiles);
 
 // File upload routes
 router.post('/upload', tempUploadMiddleware, uploadFiles);
