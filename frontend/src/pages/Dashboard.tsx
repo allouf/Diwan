@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   FileText, Users, Clock, CheckCircle, AlertCircle,
   TrendingUp, Calendar, Bell, Activity
@@ -95,6 +96,7 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
 };
 
 export const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     totalDocuments: 0,
     pendingDocuments: 0,
@@ -218,7 +220,7 @@ export const Dashboard: React.FC = () => {
           {/* Create New Document - Only for Correspondence Officers */}
           {currentUser?.role === Role.CORRESPONDENCE_OFFICER && (
             <button
-              onClick={() => window.location.href = '/documents/new'}
+              onClick={() => navigate('/documents/new')}
               className="flex items-center p-4 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors"
             >
               <FileText className="w-5 h-5 text-primary-600 mr-3" />

@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { LoginPage } from './pages/LoginPage';
 import { Dashboard } from './pages/Dashboard';
 import { Documents } from './pages/Documents';
+import { CreateDocument } from './pages/CreateDocument';
 import { Users } from './pages/Users';
 import { FileManager } from './pages/FileManager';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -41,6 +42,7 @@ function App() {
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="documents" element={<Documents />} />
+                <Route path="documents/new" element={<CreateDocument />} />
                 <Route path="users" element={<Users />} />
                 <Route path="files" element={<FileManager />} />
                 <Route path="notifications" element={<div className="p-4">Notifications Page (Coming Soon)</div>} />

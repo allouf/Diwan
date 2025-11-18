@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Plus, Search, Filter, Download, Eye, Edit, Trash2,
   FileText, ChevronDown, X
@@ -88,6 +89,7 @@ const FilterDropdown: React.FC<{
 };
 
 export const Documents: React.FC = () => {
+  const navigate = useNavigate();
   const { hasAnyRole } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -266,7 +268,10 @@ export const Documents: React.FC = () => {
           </p>
         </div>
         {hasAnyRole(['ADMIN', 'CORRESPONDENCE_OFFICER']) && (
-          <button className="flex items-center space-x-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700">
+          <button
+            onClick={() => navigate('/documents/new')}
+            className="flex items-center space-x-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700"
+          >
             <Plus className="w-4 h-4" />
             <span>New Document</span>
           </button>
